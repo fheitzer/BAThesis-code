@@ -5,13 +5,13 @@ tf.keras.backend.set_floatx('float64')
 
 
 def bi_onehot(y, bi_val):
-    if y is bival:
+    if y is bi_val:
         return tf.one_hot(0, 2)
     else:
         return tf.one_hot(1, 2)
         
 
-def load_data(binary=False, bi_range=[0,1,2,3,4,5,6], bi_val=1, batch_size=128):
+def load_data(binary=False, bi_range=[0,1,2,3,4,5], bi_val=1, batch_size=128):
     (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
     
     # Normalize the data
@@ -21,7 +21,7 @@ def load_data(binary=False, bi_range=[0,1,2,3,4,5,6], bi_val=1, batch_size=128):
     # tf.data.Dataset.from_tensor_slices creates a tf.dataset from a tensor. The elements of the dataset are slices of the first tensor dimension
     train_dataset_images = tf.data.Dataset.from_tensor_slices(train_images)
     # the mapping function maps each  element to the dataset to the value defined by the lambda function
-    # reshapes each tensor to vector
+    # flatten 2d grid image to tensor
     train_dataset_images = train_dataset_images.map(lambda img : tf.reshape(img, (-1,)))
 
 
@@ -29,8 +29,6 @@ def load_data(binary=False, bi_range=[0,1,2,3,4,5,6], bi_val=1, batch_size=128):
 
     # zip together input and labels
     train_dataset = tf.data.Dataset.zip((train_dataset_images, train_dataset_targets))
-    train_dataset = train_dataset.batch(batch_size)
-    train_dataset = train_dataset.shuffle(buffer_size=batch_size)
 
     # repeat for the test dataset
     test_dataset_images = tf.data.Dataset.from_tensor_slices(test_images)
@@ -57,9 +55,19 @@ def load_data(binary=False, bi_range=[0,1,2,3,4,5,6], bi_val=1, batch_size=128):
     train_dataset = train_dataset.map(lambda x, y: (x, tf.one_hot(y, 10)))
     test_dataset = test_dataset.map(lambda x, y: (x, tf.one_hot(y, 10)))
     
+    test_labels = tf.keras.utils.to_categorical(test_labels, num_classes=10)
+    
+    datagenerator = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=30)
+                                                                #width_shift_range=0.2,
+                                                                #height_shift_range=0.2,
+                                                                #fill_mode="nearest",
+                                                                #zoom_range=0.2,
+                                                                #shear_range=0.2)
+    generator = datagenerator.flow(np.reshape(test_images, (10000, 28, 28, 1)), test_labels, batch_size=1, seed=21465)
+    
     # Splitting it for posttraining
     split_num = int(40000)
     train_dataset_pre = train_dataset.take(split_num).batch(batch_size)
     train_dataset_post = train_dataset.skip(split_num).batch(1)
 
-    return train_dataset_pre, train_dataset_post, test_dataset.batch(batch_size)
+    return train_dataset_pre, train_dataset_post, test_dataset.batch(batch_size), generator

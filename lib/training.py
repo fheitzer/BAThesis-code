@@ -12,20 +12,23 @@ def train_step(model, img, target, loss_function, optimizer):
     return loss
 
 
-def test(model, test_data, loss_function):
+def test(model, test_data, loss_function, datapoints=10000):
     # test over complete test data
 
     test_accuracy_aggregator = []
     test_loss_aggregator = []
 
-    for (img, target) in test_data:
+    for idx, (img, target) in enumerate(test_data):
         prediction = model(img)
         sample_test_loss = loss_function(target, prediction)
         sample_test_accuracy = np.argmax(target, axis=1) == np.argmax(prediction, axis=1)
         sample_test_accuracy = np.mean(sample_test_accuracy)
         test_loss_aggregator.append(sample_test_loss.numpy())
         test_accuracy_aggregator.append(np.mean(sample_test_accuracy))
-
+        
+        if idx >= datapoints:
+            break
+            
     test_loss = np.mean(test_loss_aggregator)
     test_accuracy = np.mean(test_accuracy_aggregator)
     
@@ -35,10 +38,9 @@ def test(model, test_data, loss_function):
 
 
 def test_classes(model, test_data, loss_function):
-    
+    ### Doesnt work with generator yet
     accs = []
     for idx in range(model.num_classes):
-        #idx_onehot = tf.one_hot(idx, model.num_classes)
         test_data_filtered = test_data.unbatch().filter(lambda x, y: tf.reduce_all(tf.not_equal(tf.argmax(y), idx))).batch(512)
         loss, acc = test(model, test_data_filtered, loss_function)
         accs.append(acc)
@@ -53,6 +55,7 @@ def test_ensemble_classes(ensemble, test_data, loss_function):
     for idx, model in enumerate(ensemble.models):
         print(f"Model: __ {idx}")
         accs.append(test_classes(model, test_data, loss_function))
+        
     return accs
 
 
@@ -66,6 +69,11 @@ def test_ensemble(ensemble, test_data, loss_function):
         print(f"LOSS {loss} ::: ACC {acc}")
         accs.append(acc)
         losses.append(loss)
+    print("Ensemble:")
+    loss,acc = test(ensemble, test_data, loss_function)
+    print(f"LOSS {loss} ::: ACC {acc}")
+    accs.append(acc)
+    losses.append(loss)
     return losses, accs
 
 
@@ -118,7 +126,7 @@ def pretraining(model, train_dataset, test_dataset, epochs=10):
     return train_losses, test_losses, test_accuracies
         
 
-def posttraining(ensemble, test_dataset, epochs=10, batch_size=32):
+def continuous_training(ensemble, test_dataset, epochs=10, batch_size=128):
     tf.keras.backend.clear_session()
 
     # Hyperparameters
@@ -136,24 +144,24 @@ def posttraining(ensemble, test_dataset, epochs=10, batch_size=32):
     test_accuracies = []
 
     # Get datasets
-    train_ds = ensemble.get_data()
+    train_ds = ensemble.get_continuous_training_data()
 
     # testing once before we begin
-    test_loss, test_accuracy = test(ensemble, test_dataset, cross_entropy_loss)
-    test_losses.append(test_loss)
-    test_accuracies.append(test_accuracy)
+    #test_loss, test_accuracy = test(ensemble, test_dataset, cross_entropy_loss)
+    #test_losses.append(test_loss)
+    #test_accuracies.append(test_accuracy)
 
     # Get an individual dataset for each model.
     for idx, model in enumerate(ensemble.models):
         train_ds_current = train_ds.filter(lambda x, y, z: tf.reduce_all(tf.not_equal(z, idx))).batch(batch_size)
         
         # Train each model
-        print('Model: __ ' + str(idx))
+        print('Model: ___ ' + str(idx))
         for epoch in range(epochs):
-            print('Epoch: __ ' + str(epoch))
+            print('Epoch: _ ' + str(epoch))
 
             train_ds_current = train_ds_current.shuffle(buffer_size=64)
-            test_dataset = test_dataset.shuffle(buffer_size=64)
+            #test_dataset = test_dataset.shuffle(buffer_size=64)
 
             # training (and checking in with training)
             running_average = 0

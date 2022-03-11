@@ -52,12 +52,12 @@ class Ensemble(tf.keras.Model, ABC):
 
                 if pred1count == 1:
                     if collect:
-                        self.__collect_data(x, label=pred2, wrong_model=list(prediction).index(pred1))
+                        self.__collect_continuous_training_data(x, label=pred2, wrong_model=list(prediction).index(pred1))
                     output[idx] = tf.one_hot(list(set(prediction))[1], self.num_classes)
 
                 elif pred2count == 1:
                     if collect:
-                        self.__collect_data(x, label=pred1, wrong_model=list(prediction).index(pred2))
+                        self.__collect_continuous_training_data(x, label=pred1, wrong_model=list(prediction).index(pred2))
                     output[idx] = tf.one_hot(list(set(prediction))[0], self.num_classes)
     
             # Unsure. Save for later review.
@@ -68,7 +68,7 @@ class Ensemble(tf.keras.Model, ABC):
             
         return tf.convert_to_tensor(output)
 
-    def __collect_data(self, x, label, wrong_model):
+    def __collect_continuous_training_data(self, x, label, wrong_model):
         """Add the current datapoint to self.data 
         with the index of the model that needs to be trained on that datapoint
         and the label predicted by the other networks.
@@ -92,10 +92,10 @@ class Ensemble(tf.keras.Model, ABC):
         else:
             self.__missed_data = self.__missed_data.concatenate(ds)
             
-    def get_data(self):
+    def get_continuous_training_data(self):
         return self.__data
 
-    def set_data(self, ds):
+    def set_continuous_training_data(self, ds):
         self.__data = ds
 
     def get_missed_data(self):
@@ -119,6 +119,9 @@ class NN(tf.keras.Model):
         self.model.append(Dense(num_classes, activation=tf.keras.activations.softmax))
 
     def call(self, x):
+        
+        x = tf.reshape(x, (x.shape[0], 784))
+        
         for layer in self.model:
             x = layer(x)
         return x
