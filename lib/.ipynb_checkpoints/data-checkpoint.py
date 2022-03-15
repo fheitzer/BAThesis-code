@@ -63,11 +63,13 @@ def load_data(binary=False, bi_range=[0,1,2,3,4,5], bi_val=1, batch_size=128):
                                                                 #fill_mode="nearest",
                                                                 #zoom_range=0.2,
                                                                 #shear_range=0.2)
-    generator = datagenerator.flow(np.reshape(test_images, (10000, 28, 28, 1)), test_labels, batch_size=1, seed=21465)
+    train_generator = datagenerator.flow(np.reshape(test_images, (10000, 28, 28, 1)), test_labels, batch_size=1, seed=21465)
+    
+    test_generator = datagenerator.flow(np.reshape(train_images[50000:], (10000, 28, 28, 1)), test_labels, batch_size=1, seed=49074)
     
     # Splitting it for posttraining
     split_num = int(40000)
     train_dataset_pre = train_dataset.take(split_num).batch(batch_size)
     train_dataset_post = train_dataset.skip(split_num).batch(1)
 
-    return train_dataset_pre, train_dataset_post, test_dataset.batch(batch_size), generator
+    return train_dataset_pre, train_dataset_post, test_dataset.batch(batch_size), train_generator, test_generator

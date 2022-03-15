@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import lib.utils
 
 
 def train_step(model, img, target, loss_function, optimizer):
@@ -125,12 +126,12 @@ def pretraining(model, train_dataset, test_dataset, epochs=10):
         
     return train_losses, test_losses, test_accuracies
         
-
-def continuous_training(ensemble, test_dataset, epochs=10, batch_size=128):
+@tf.autograph.experimental.do_not_convert
+def continuous_training(ensemble, train_generator, test_generator, epochs=10, batch_size=8, run_it=1, data_to_run=10000):
     tf.keras.backend.clear_session()
 
     # Hyperparameters
-    learning_rate = 0.0005
+    learning_rate = 0.00001
     running_average_factor = 0.95
 
     # Initialize the loss: categorical cross entropy.
@@ -143,37 +144,53 @@ def continuous_training(ensemble, test_dataset, epochs=10, batch_size=128):
     test_losses = []
     test_accuracies = []
 
-    # Get datasets
-    train_ds = ensemble.get_continuous_training_data()
-
     # testing once before we begin
-    #test_loss, test_accuracy = test(ensemble, test_dataset, cross_entropy_loss)
-    #test_losses.append(test_loss)
-    #test_accuracies.append(test_accuracy)
-
-    # Get an individual dataset for each model.
-    for idx, model in enumerate(ensemble.models):
-        train_ds_current = train_ds.filter(lambda x, y, z: tf.reduce_all(tf.not_equal(z, idx))).batch(batch_size)
+    print("Ensemble:")
+    test_loss, test_accuracy = test(ensemble, test_generator, cross_entropy_loss)
+    print(f"LOSS {test_loss} ::: ACC {test_accuracy}")
+    
+    # Loop to train, collect new data, train,....
+    for run in range(run_it):
         
-        # Train each model
-        print('Model: ___ ' + str(idx))
-        for epoch in range(epochs):
-            print('Epoch: _ ' + str(epoch))
+        print("Looking at new data...")
+        lib.utils.run_data(ensemble, generator=train_generator, datapoints=data_to_run)
+        print("Continuous training data collected:", len(ensemble.continuous_training_data), "Missed data:", len(ensemble.missed_data))
+        
+        print(f"Run: {run}")
+        # Get an individual dataset for each model.
+        for idx, model in enumerate(ensemble.models):
+            train_ds_current = ensemble.continuous_training_data.filter(lambda x, y, z: tf.reduce_all(tf.not_equal(z, idx))).batch(batch_size)
 
-            train_ds_current = train_ds_current.shuffle(buffer_size=64)
-            #test_dataset = test_dataset.shuffle(buffer_size=64)
-
-            # training (and checking in with training)
-            running_average = 0
-            for (img, target, _) in train_ds_current:
-                train_loss = train_step(model, img, target, cross_entropy_loss, optimizer)
-                running_average = running_average_factor * running_average + (1 - running_average_factor) * train_loss
-            train_losses.append(running_average)
-
-            # testing
-            test_loss, test_accuracy = test(model, test_dataset, cross_entropy_loss)
+            # Train each model
+            print('Model: ___ ' + str(idx))
+            test_loss, test_accuracy = test(model, test_generator, cross_entropy_loss)
+            print(f"LOSS {test_loss} ::: ACC {test_accuracy}")
             test_losses.append(test_loss)
             test_accuracies.append(test_accuracy)
+            for epoch in range(epochs):
+                print('Epoch: _ ' + str(epoch))
+
+                train_ds_current = train_ds_current.shuffle(buffer_size=1)
+
+                # training (and checking in with training)
+                running_average = 0
+                for (img, target, _) in train_ds_current:
+                    train_loss = train_step(model, img, target, cross_entropy_loss, optimizer)
+                    running_average = running_average_factor * running_average + (1 - running_average_factor) * train_loss
+                train_losses.append(running_average)
+
+                # testing
+                test_loss, test_accuracy = test(model, test_generator, cross_entropy_loss)
+                print(f"LOSS {test_loss} ::: ACC {test_accuracy} : {test_accuracy - test_accuracies[-1]}")
+                test_losses.append(test_loss)
+                test_accuracies.append(test_accuracy)
+            
+            print("Ensemble:")
+            test_loss, test_accuracy = test(ensemble, test_generator, cross_entropy_loss)
             print(f"LOSS {test_loss} ::: ACC {test_accuracy}")
+        train_losses = []
+        test_losses = []
+        test_accuracies = []
         
-    return train_losses, test_losses, test_accuracies
+            
+        

@@ -13,8 +13,8 @@ class Ensemble(tf.keras.Model, ABC):
     def __init__(self, models):
         super(Ensemble, self).__init__()
         self.models = models
-        self.__data = None
-        self.__missed_data = None
+        self.continuous_training_data = None
+        self.missed_data = None
         self.num_classes = models[0].num_classes
         self.acc = None
 
@@ -52,23 +52,23 @@ class Ensemble(tf.keras.Model, ABC):
 
                 if pred1count == 1:
                     if collect:
-                        self.__collect_continuous_training_data(x, label=pred2, wrong_model=list(prediction).index(pred1))
+                        self.collect_continuous_training_data(x, label=pred2, wrong_model=list(prediction).index(pred1))
                     output[idx] = tf.one_hot(list(set(prediction))[1], self.num_classes)
 
                 elif pred2count == 1:
                     if collect:
-                        self.__collect_continuous_training_data(x, label=pred1, wrong_model=list(prediction).index(pred2))
+                        self.collect_continuous_training_data(x, label=pred1, wrong_model=list(prediction).index(pred2))
                     output[idx] = tf.one_hot(list(set(prediction))[0], self.num_classes)
     
             # Unsure. Save for later review.
             else:
                 output[idx] = np.random.dirichlet(np.ones(self.num_classes), size=1)
                 if collect:
-                    self.__collect_miss(x)
+                    self.collect_miss(x)
             
         return tf.convert_to_tensor(output)
 
-    def __collect_continuous_training_data(self, x, label, wrong_model):
+    def collect_continuous_training_data(self, x, label, wrong_model):
         """Add the current datapoint to self.data 
         with the index of the model that needs to be trained on that datapoint
         and the label predicted by the other networks.
@@ -77,34 +77,34 @@ class Ensemble(tf.keras.Model, ABC):
         label_onehot = tf.data.Dataset.from_tensor_slices([label]).map(lambda x: tf.one_hot(x, self.num_classes))
         wrong_model = tf.data.Dataset.from_tensor_slices([wrong_model])
         datapoint = tf.data.Dataset.zip((img, label_onehot, wrong_model))
-        if self.__data is None:
-            self.__data = datapoint
+        if self.continuous_training_data is None:
+            self.continuous_training_data = datapoint
         else:
-            self.__data = self.__data.concatenate(datapoint)
+            self.continuous_training_data = self.continuous_training_data.concatenate(datapoint)
 
-    def __collect_miss(self, x):
+    def collect_miss(self, x):
         """Collect a datapoint which could not be determined.
         Review by hand later.
         """
         ds = tf.data.Dataset.from_tensor_slices([x])
-        if self.__missed_data is None:
-            self.__missed_data = ds
+        if self.missed_data is None:
+            self.missed_data = ds
         else:
-            self.__missed_data = self.__missed_data.concatenate(ds)
+            self.missed_data = self.missed_data.concatenate(ds)
             
     def get_continuous_training_data(self):
-        return self.__data
+        return self.continuous_training_data
 
     def set_continuous_training_data(self, ds):
-        self.__data = ds
+        self.continuous_training_data = ds
 
     def get_missed_data(self):
-        return self.__missed_data
+        return self.missed_data
                                             
     def reset_data(self):
         """Data should be reset after each posttraining."""
-        self.__data = None
-        self.__missed_data = None
+        self.continuous_training_data = None
+        self.missed_data = None
         
         
 class NN(tf.keras.Model):
