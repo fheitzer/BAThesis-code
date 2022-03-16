@@ -11,7 +11,7 @@ def bi_onehot(y, bi_val):
         return tf.one_hot(1, 2)
         
 
-def load_data(binary=False, bi_range=[0,1,2,3,4,5], bi_val=1, batch_size=128):
+def load_data(binary=False, bi_range=[0,1,2,3,4,5], bi_val=1, batch_size=128, rotation=30):
     (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
     
     # Normalize the data
@@ -56,16 +56,24 @@ def load_data(binary=False, bi_range=[0,1,2,3,4,5], bi_val=1, batch_size=128):
     test_dataset = test_dataset.map(lambda x, y: (x, tf.one_hot(y, 10)))
     
     test_labels = tf.keras.utils.to_categorical(test_labels, num_classes=10)
+    train_labels = tf.keras.utils.to_categorical(train_labels, num_classes=10)
+
     
-    datagenerator = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=30)
+    datagenerator = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=rotation)
                                                                 #width_shift_range=0.2,
                                                                 #height_shift_range=0.2,
                                                                 #fill_mode="nearest",
                                                                 #zoom_range=0.2,
                                                                 #shear_range=0.2)
-    train_generator = datagenerator.flow(np.reshape(test_images, (10000, 28, 28, 1)), test_labels, batch_size=1, seed=21465)
+    train_generator = datagenerator.flow(np.reshape(test_images, (10000, 28, 28, 1)),
+                                         test_labels,
+                                         batch_size=1,
+                                         seed=21465)
     
-    test_generator = datagenerator.flow(np.reshape(train_images[50000:], (10000, 28, 28, 1)), test_labels, batch_size=1, seed=49074)
+    test_generator = datagenerator.flow(np.reshape(train_images[50000:], (10000, 28, 28, 1)),
+                                        train_labels[50000:],
+                                        batch_size=1,
+                                        seed=49074)
     
     # Splitting it for posttraining
     split_num = int(40000)

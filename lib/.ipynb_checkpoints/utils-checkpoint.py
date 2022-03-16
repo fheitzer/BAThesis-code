@@ -55,9 +55,12 @@ def plot_collected_data(ensemble):
     fig, ax = plt.subplots()
     for i in range(df.shape[1]):
         ax.bar(x+dx[i], df[:,i], width=d, label="{}".format(i))
-
-    plt.xlabel("Model")
-    plt.title(f"Amount of the collected data ({len(ensemble.continuous_training_data)}) per model and class.\n On {len(ensemble.missed_data)} datapoints no prediction could be made.")
+        
+    models = ["Deep NN", "Broad NN", "Mixed NN", "Big CNN", "Small CNN"]
+    ax.set_xticks(range(5))
+    ax.set_xticklabels(models)
+    #plt.xlabel("Model")
+    plt.title(f"Amount of the collected data ({len(ensemble.continuous_training_data)}) per model and class.\n {len(ensemble.missed_data)} datapoints were not classified.")
     plt.legend(title="Class", loc='center left', bbox_to_anchor=(1, 0.5), framealpha=1)
     plt.show()
         
