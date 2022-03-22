@@ -35,26 +35,35 @@ def plot_collected_data(ensemble):
     
     if ensemble.continuous_training_data is None:
         return
-    # splitting the collected data into two arrays with the labels and the models
-    #model_dist = np.fromiter(ensemble.continous_training_data.take(10).map(lambda x, y, z: z), np.float32)
-    #label_dist = np.fromiter(ensemble.continous_training_data.take(10).map(lambda x, y, z: tf.argmax(y)), np.float32)
-    
-    # Turning the arrays to a dataframe which has the combination counts as values
-    df = pd.DataFrame(np.fromiter(ensemble.continuous_training_data.map(lambda x, y, z: z), np.float32), columns=['model'])
-    df['label'] = np.fromiter(ensemble.continuous_training_data.map(lambda x, y, z: tf.argmax(y)), np.float32)
-    
-    df = df.groupby(['model','label']).size().reset_index().rename(columns={0:'count'})
-    df = df.pivot_table('count', 'model', 'label')
-    df = df.to_numpy()
-    
-    x = np.arange(df.shape[0])
-    dx = (np.arange(df.shape[1])-df.shape[1]/2.)/(df.shape[1]+2.)
-    d = 1./(df.shape[1]+2.)
 
+    # Turning the arrays to a dataframe which has the combination counts as values
+    df_all = pd.DataFrame(np.fromiter(ensemble.continuous_training_data.map(lambda img, pred, model, label: model), np.float32), columns=['model'])
+    df_all['label'] = np.fromiter(ensemble.continuous_training_data.map(lambda img, pred, model, label: tf.argmax(pred)), np.float32)
+    
+    ds_neg = ensemble.continuous_training_data.filter(lambda img, pred, model, label: tf.reduce_all(tf.not_equal(pred, label)))
+    df_neg = pd.DataFrame(np.fromiter(ds_neg.map(lambda img, pred, model, label: model), np.float32), columns=['model'])
+    df_neg['label'] = np.fromiter(ds_neg.map(lambda img, pred, model, label: tf.argmax(label)), np.float32)
+    
+    del ds_neg
+    # Count the model-pred combinations and pivot the table to have the count fill it
+    df_all = df_all.groupby(['model','label']).size().reset_index().rename(columns={0:'count'})
+    df_all = df_all.pivot_table('count', 'model', 'label')
+    df_all = df_all.to_numpy()
+    
+    df_neg = df_neg.groupby(['model','label']).size().reset_index().rename(columns={0:'count'})
+    df_neg = df_neg.pivot_table('count', 'model', 'label')
+    df_neg = df_neg.to_numpy()
+    
+    # Preparing subbarplot spatial shift
+    x = np.arange(df_all.shape[0])
+    dx = (np.arange(df_all.shape[1])-df_all.shape[1]/2.)/(df_all.shape[1]+2.)
+    d = 1./(df_all.shape[1]+2.)
 
     fig, ax = plt.subplots()
-    for i in range(df.shape[1]):
-        ax.bar(x+dx[i], df[:,i], width=d, label="{}".format(i))
+    for i in range(df_all.shape[1]):
+        ax.bar(x+dx[i], df_all[:,i], width=d, label="{}".format(i))
+        #ax.bar(x+dx[i], df_all[:,i] - df_neg[:,i], width=d, label="{}".format(i))
+        
         
     models = ["Deep NN", "Broad NN", "Mixed NN", "Big CNN", "Small CNN"]
     ax.set_xticks(range(5))
@@ -70,7 +79,7 @@ def run_data(ensemble, data=None, generator=None, datapoints=10000):
     
     if generator is not None:
         for idx, (img, label) in enumerate(generator):
-            _ = ensemble(img, collect=True)
+            _ = ensemble(img, collect=True, y=label)
             if idx == datapoints:
                 break
                 

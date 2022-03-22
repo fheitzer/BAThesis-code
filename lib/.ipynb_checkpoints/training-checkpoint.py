@@ -152,7 +152,7 @@ def continuous_training(ensemble, test_generator, epochs=10, batch_size=1, cycle
     # Get an individual dataset for each model.
     for idx, model in enumerate(ensemble.models):
         print('Model: ___ ' + str(idx))
-        train_ds_current = ensemble.continuous_training_data.filter(lambda x, y, z: tf.reduce_all(tf.not_equal(z, idx))).batch(batch_size)
+        train_ds_current = ensemble.continuous_training_data.filter(lambda img, pred, model, label: tf.reduce_all(tf.not_equal(model, idx))).batch(batch_size)
 
         for epoch in range(epochs):
             print('Epoch: _ ' + str(epoch))
@@ -161,7 +161,7 @@ def continuous_training(ensemble, test_generator, epochs=10, batch_size=1, cycle
 
             # training (and checking in with training)
             running_average = 0
-            for (img, target, _) in train_ds_current:
+            for (img, target, _, _) in train_ds_current:
                 train_loss = train_step(model, img, target, cross_entropy_loss, optimizer)
                 running_average = running_average_factor * running_average + (1 - running_average_factor) * train_loss
             train_losses[idx,epoch] = running_average
@@ -199,6 +199,7 @@ def cycle(ensemble, train_generator, test_generator, epochs=10, batch_size=1, cy
     # Initialize the loss: categorical cross entropy.
     cross_entropy_loss = tf.keras.losses.CategoricalCrossentropy()
     
+    """
     # testing once before we begin
     print("Testing before training")
     print("Ensemble:")
@@ -211,7 +212,7 @@ def cycle(ensemble, train_generator, test_generator, epochs=10, batch_size=1, cy
         test_loss, test_accuracy = test(model, test_generator, cross_entropy_loss)
         print(f"LOSS {test_loss} ::: ACC {test_accuracy}")
         starting_losses[idx] = test_loss
-        starting_accuracies[idx] = test_accuracy
+        starting_accuracies[idx] = test_accuracy"""
     
     for cycle in range(cycles):
         # Collect data to train on

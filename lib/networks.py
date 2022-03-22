@@ -18,7 +18,7 @@ class Ensemble(tf.keras.Model, ABC):
         self.num_classes = models[0].num_classes
         self.acc = None
 
-    def call(self, x, collect=False):
+    def call(self, x, collect=False, y=None):
         """The ensemble is either predicting unanimous, 
         or one model is off and the datapoint is collected
          for this models posttraining.
@@ -52,45 +52,48 @@ class Ensemble(tf.keras.Model, ABC):
 
                 if pred1count == 1:
                     if collect:
-                        self.collect_continuous_training_data(x, label=pred2, wrong_model=list(prediction).index(pred1))
+                        self.collect_continuous_training_data(x, pred=pred2, wrong_model=list(prediction).index(pred1), label=y)
                     output[idx] = tf.one_hot(list(set(prediction))[1], self.num_classes)
 
                 elif pred2count == 1:
                     if collect:
-                        self.collect_continuous_training_data(x, label=pred1, wrong_model=list(prediction).index(pred2))
+                        self.collect_continuous_training_data(x, pred=pred1, wrong_model=list(prediction).index(pred2), label=y)
                     output[idx] = tf.one_hot(list(set(prediction))[0], self.num_classes)
     
             # Unsure. Save for later review.
             else:
                 output[idx] = np.random.dirichlet(np.ones(self.num_classes), size=1)
                 if collect:
-                    self.collect_miss(x)
+                    self.collect_miss(x, y)
             
         return tf.convert_to_tensor(output)
 
-    def collect_continuous_training_data(self, x, label, wrong_model):
+    def collect_continuous_training_data(self, x, pred, wrong_model, label):
         """Add the current datapoint to self.data 
         with the index of the model that needs to be trained on that datapoint
         and the label predicted by the other networks.
         """
         img = tf.data.Dataset.from_tensor_slices(x)
-        label_onehot = tf.data.Dataset.from_tensor_slices([label]).map(lambda x: tf.one_hot(x, self.num_classes))
+        pred = tf.data.Dataset.from_tensor_slices([pred]).map(lambda x: tf.one_hot(x, self.num_classes))
         wrong_model = tf.data.Dataset.from_tensor_slices([wrong_model])
-        datapoint = tf.data.Dataset.zip((img, label_onehot, wrong_model))
+        label = tf.data.Dataset.from_tensor_slices(label)
+        datapoint = tf.data.Dataset.zip((img, pred, wrong_model, label))
         if self.continuous_training_data is None:
             self.continuous_training_data = datapoint
         else:
             self.continuous_training_data = self.continuous_training_data.concatenate(datapoint)
 
-    def collect_miss(self, x):
+    def collect_miss(self, x, y):
         """Collect a datapoint which could not be determined.
         Review by hand later.
         """
-        ds = tf.data.Dataset.from_tensor_slices([x])
+        img = tf.data.Dataset.from_tensor_slices([x])
+        label = tf.data.Dataset.from_tensor_slices(y)
+        datapoint = tf.data.Dataset.zip((img, label))
         if self.missed_data is None:
-            self.missed_data = ds
+            self.missed_data = datapoint
         else:
-            self.missed_data = self.missed_data.concatenate(ds)
+            self.missed_data = self.missed_data.concatenate(datapoint)
             
     def get_continuous_training_data(self):
         return self.continuous_training_data
