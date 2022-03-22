@@ -145,12 +145,13 @@ def continuous_training(ensemble, test_generator, epochs=10, batch_size=1, cycle
     train_losses = np.zeros((len(ensemble.models), epochs))
     test_losses = np.zeros((len(ensemble.models), epochs))
     test_accuracies = np.zeros((len(ensemble.models), epochs))
-    ensemble_loss = np.zeros(len(ensemble.models))
+    ensemble_losses = np.zeros(len(ensemble.models))
     ensemble_accuracies = np.zeros(len(ensemble.models))
         
         
     # Get an individual dataset for each model.
     for idx, model in enumerate(ensemble.models):
+        print('Model: ___ ' + str(idx))
         train_ds_current = ensemble.continuous_training_data.filter(lambda x, y, z: tf.reduce_all(tf.not_equal(z, idx))).batch(batch_size)
 
         for epoch in range(epochs):
@@ -163,13 +164,13 @@ def continuous_training(ensemble, test_generator, epochs=10, batch_size=1, cycle
             for (img, target, _) in train_ds_current:
                 train_loss = train_step(model, img, target, cross_entropy_loss, optimizer)
                 running_average = running_average_factor * running_average + (1 - running_average_factor) * train_loss
-            train_losses.append(running_average)
+            train_losses[idx,epoch] = running_average
 
             # test model after each epoch
             test_loss, test_accuracy = test(model, test_generator, cross_entropy_loss)
-            print(f"LOSS {test_loss} ::: ACC {test_accuracy} : {test_accuracy - test_accuracies[-1]}")
             test_losses[idx, epoch] = test_loss
             test_accuracies[idx, epoch] = test_accuracy
+            print(f"LOSS {test_loss} ::: ACC {test_accuracy} : {test_accuracy - test_accuracies[idx,epoch-1]}")
         
         # Test ensemble after each model's training
         print("Ensemble:")
@@ -195,7 +196,11 @@ def cycle(ensemble, train_generator, test_generator, epochs=10, batch_size=1, cy
     starting_losses = np.zeros(len(ensemble.models))
     starting_accuracies = np.zeros(len(ensemble.models))
     
+    # Initialize the loss: categorical cross entropy.
+    cross_entropy_loss = tf.keras.losses.CategoricalCrossentropy()
+    
     # testing once before we begin
+    print("Testing before training")
     print("Ensemble:")
     starting_ensemble_loss, starting_ensemble_accuracy = test(ensemble, test_generator, cross_entropy_loss)
     print(f"LOSS {starting_ensemble_loss} ::: ACC {starting_ensemble_accuracy}")
@@ -211,16 +216,17 @@ def cycle(ensemble, train_generator, test_generator, epochs=10, batch_size=1, cy
     for cycle in range(cycles):
         # Collect data to train on
         print("Looking at new data...")
-        lib.utils.run_data(ensemble, generator=train_generator, datapoints=data_to_run)
+        lib.utils.run_data(ensemble, generator=train_generator, datapoints=data_per_cycle)
         print("Continuous training data collected:", len(ensemble.continuous_training_data), "Missed data:", len(ensemble.missed_data))
         
         # Save collected data to plot it later
-        
         timestamp = datetime.now().strftime('%b-%d-%Y_%H%M%S%f')
-        tf.data.experimental.save(ensemble.continuous_training_data, '../datasets/continuous_training/' + name + '/' + str(cycle) + '_'+ timestamp, compression='GZIP')
+        tf.data.experimental.save(ensemble.continuous_training_data,
+                                  '../continuous_training_data/collected_data/' + name + '/' + str(cycle) + '_'+ timestamp,
+                                  compression='GZIP')
         
         # run the cycle
-        print(f"Run: {cycle}")
+        print(f"Cycle: {cycle}")
         a, b, c, d, e = continuous_training(ensemble,
                                             test_generator,
                                             epochs=epochs,
@@ -230,10 +236,10 @@ def cycle(ensemble, train_generator, test_generator, epochs=10, batch_size=1, cy
         train_losses[cycle,:,:] = a
         test_losses[cycle,:,:] = b
         test_accuracies[cycle,:,:] = c
-        ensemble_losses[cycle,:,:] = d
-        ensemble_accuracies[cycle,:,:] = e
+        ensemble_losses[cycle,:] = d
+        ensemble_accuracies[cycle,:] = e
 
-        np.savez_compressed('../datasets/' + name + '/accloss',
+        np.savez_compressed('../continuous_training_data/' + name + '_accloss',
                             models_train_losses=train_losses,
                             models_test_losses=test_losses,
                             models_test_accuracies=test_accuracies, 

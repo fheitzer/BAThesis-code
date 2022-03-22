@@ -3,13 +3,11 @@ import numpy as np
 
 import sys; sys.path.insert(0, '..')
 import importlib
-import os
-os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 from lib import data, networks, training, utils
 
 if __name__ == '__main__':
-    train_ds_pre, train_ds_post, test_ds, generator = data.load_data()
+    train_ds_pre, train_ds_post, test_ds, train_generator, test_generator = data.load_data()
 
     num_classes = 10
     # Small model
