@@ -116,7 +116,7 @@ class Ensemble(tf.keras.Model, ABC):
     def load_data(self, filepath):
         self.set_continuous_training_data(
             tf.data.experimental.load(filepath[0],
-                                      compression='GZIP'
+                                      compression='GZIP',
                                       element_spec=self.continuous_data_spec))
         self.set_missed_data(
             tf.data.experimental.load(filepath[1],

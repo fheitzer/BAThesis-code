@@ -40,7 +40,7 @@ def plot_collected_data(ensemble):
     df_all = pd.DataFrame(np.fromiter(ensemble.continuous_training_data.map(lambda img, pred, model, label: model), np.float32), columns=['model'])
     df_all['label'] = np.fromiter(ensemble.continuous_training_data.map(lambda img, pred, model, label: tf.argmax(pred)), np.float32)
     
-    ds_neg = ensemble.continuous_training_data.filter(lambda img, pred, model, label: tf.reduce_all(tf.not_equal(pred, label)))
+    ds_neg = ensemble.continuous_training_data.filter(lambda img, pred, model, label: pred is not label)
     df_neg = pd.DataFrame(np.fromiter(ds_neg.map(lambda img, pred, model, label: model), np.float32), columns=['model'])
     df_neg['label'] = np.fromiter(ds_neg.map(lambda img, pred, model, label: tf.argmax(label)), np.float32)
     
@@ -61,8 +61,8 @@ def plot_collected_data(ensemble):
 
     fig, ax = plt.subplots()
     for i in range(df_all.shape[1]):
-        ax.bar(x+dx[i], df_all[:,i], width=d, label="{}".format(i))
-        #ax.bar(x+dx[i], df_all[:,i] - df_neg[:,i], width=d, label="{}".format(i))
+        ax.bar(x+dx[i], df_all[:,i], width=d, label="_Hidden", color='black')
+        ax.bar(x+dx[i], df_neg[:,i], width=d, label="{}".format(i))
         
         
     models = ["Deep NN", "Broad NN", "Mixed NN", "Big CNN", "Small CNN"]
