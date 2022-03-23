@@ -40,19 +40,21 @@ def plot_collected_data(ensemble):
     df_all = pd.DataFrame(np.fromiter(ensemble.continuous_training_data.map(lambda img, pred, model, label: model), np.float32), columns=['model'])
     df_all['label'] = np.fromiter(ensemble.continuous_training_data.map(lambda img, pred, model, label: tf.argmax(pred)), np.float32)
     
-    ds_neg = ensemble.continuous_training_data.filter(lambda img, pred, model, label: pred is not label)
-    df_neg = pd.DataFrame(np.fromiter(ds_neg.map(lambda img, pred, model, label: model), np.float32), columns=['model'])
-    df_neg['label'] = np.fromiter(ds_neg.map(lambda img, pred, model, label: tf.argmax(label)), np.float32)
+    ds_neg = ensemble.continuous_training_data.filter(lambda img, pred, model, label: tf.reduce_all(tf.equal(pred, label)))
+    df_pos = pd.DataFrame(np.fromiter(ds_neg.map(lambda img, pred, model, label: model), np.float32), columns=['model'])
+    df_pos['label'] = np.fromiter(ds_neg.map(lambda img, pred, model, label: tf.argmax(label)), np.float32)
     
     del ds_neg
     # Count the model-pred combinations and pivot the table to have the count fill it
     df_all = df_all.groupby(['model','label']).size().reset_index().rename(columns={0:'count'})
     df_all = df_all.pivot_table('count', 'model', 'label')
     df_all = df_all.to_numpy()
+    df_all = np.nan_to_num(df_all)
     
-    df_neg = df_neg.groupby(['model','label']).size().reset_index().rename(columns={0:'count'})
-    df_neg = df_neg.pivot_table('count', 'model', 'label')
-    df_neg = df_neg.to_numpy()
+    df_pos = df_pos.groupby(['model','label']).size().reset_index().rename(columns={0:'count'})
+    df_pos = df_pos.pivot_table('count', 'model', 'label')
+    df_pos = df_pos.to_numpy()
+    df_pos = np.nan_to_num(df_pos)
     
     # Preparing subbarplot spatial shift
     x = np.arange(df_all.shape[0])
@@ -62,8 +64,7 @@ def plot_collected_data(ensemble):
     fig, ax = plt.subplots()
     for i in range(df_all.shape[1]):
         ax.bar(x+dx[i], df_all[:,i], width=d, label="_Hidden", color='black')
-        ax.bar(x+dx[i], df_neg[:,i], width=d, label="{}".format(i))
-        
+        ax.bar(x+dx[i], df_pos[:,i], width=d, label="{}".format(i))
         
     models = ["Deep NN", "Broad NN", "Mixed NN", "Big CNN", "Small CNN"]
     ax.set_xticks(range(5))
@@ -71,8 +72,12 @@ def plot_collected_data(ensemble):
     #plt.xlabel("Model")
     
     plt.title(f"Amount of the collected data ({len(ensemble.continuous_training_data)}) per model and class.")
+    
+    subtitle = f"{np.nansum(df_pos)} collected datapoints labeled correct\n{np.sum(df_all)-np.sum(df_pos)} collected datapoints were labeled wrong\n"
     if ensemble.missed_data is not None:
-        plt.subtitle("{len(ensemble.missed_data)} datapoints were not classified.")
+        subtitle += f"{len(ensemble.missed_data)} datapoints were not classified."
+        
+    print(subtitle)
     plt.legend(title="Class", loc='center left', bbox_to_anchor=(1, 0.5), framealpha=1)
     plt.show()
         
