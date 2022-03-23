@@ -196,7 +196,7 @@ def cycle(ensemble, train_generator, test_generator, epochs=10, batch_size=1, cy
     starting_losses = np.zeros(len(ensemble.models))
     starting_accuracies = np.zeros(len(ensemble.models))
     
-    filepaths = np.zeros(cycles)
+    filepaths = np.zeros((cycles, 2))
     
     # Initialize the loss: categorical cross entropy.
     cross_entropy_loss = tf.keras.losses.CategoricalCrossentropy()
@@ -224,10 +224,15 @@ def cycle(ensemble, train_generator, test_generator, epochs=10, batch_size=1, cy
         
         # Save collected data to plot it later
         timestamp = datetime.now().strftime('%b-%d-%Y_%H%M%S%f')
-        filepaths[cycle] = '../continuous_training_data/' + name + '/' + str(cycle) + '_' + timestamp
+        filepaths[cycle, 0] = '../continuous_training_data/' + name + '/' + str(cycle) + '_' + timestamp
+        filepaths[cycle, 1] = '../continuous_training_data/' + name + '/' + str(cycle) + '_miss_' + timestamp
         tf.data.experimental.save(ensemble.continuous_training_data,
-                                  filepaths[-1],
+                                  filepaths[-1,0],
                                   compression='GZIP')
+        tf.data.experimental.save(ensemble.missed_data,
+                                  filepaths[-1,1],
+                                  compression='GZIP')
+        print("Collected data is saved!")
         
         # run the cycle
         print(f"Cycle: {cycle}")

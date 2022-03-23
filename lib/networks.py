@@ -17,6 +17,12 @@ class Ensemble(tf.keras.Model, ABC):
         self.missed_data = None
         self.num_classes = models[0].num_classes
         self.acc = None
+        self.continuous_data_spec = (tf.TensorSpec(shape=(28,28,1), dtype=tf.float64),
+                                     tf.TensorSpec(shape=(10,), dtype=tf.float32),
+                                     tf.TensorSpec(shape=(), dtype=tf.int32),
+                                     tf.TensorSpec(shape=(10,), dtype=tf.float32))
+        self.missed_data_spec = (tf.TensorSpec(shape=(28,28,1), dtype=tf.float64),
+                                 tf.TensorSpec(shape=(10,), dtype=tf.float32))
 
     def call(self, x, collect=False, y=None):
         """The ensemble is either predicting unanimous, 
@@ -103,6 +109,19 @@ class Ensemble(tf.keras.Model, ABC):
 
     def get_missed_data(self):
         return self.missed_data
+    
+    def set_missed_data(self, ds):
+        self.missed_data = ds
+        
+    def load_data(self, filepath):
+        self.set_continuous_training_data(
+            tf.data.experimental.load(filepath[0],
+                                      compression='GZIP'
+                                      element_spec=self.continuous_data_spec))
+        self.set_missed_data(
+            tf.data.experimental.load(filepath[1],
+                                      compression='GZIP',
+                                      element_spec=self.missed_data_spec))
                                             
     def reset_data(self):
         """Data should be reset after each posttraining."""

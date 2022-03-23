@@ -69,7 +69,10 @@ def plot_collected_data(ensemble):
     ax.set_xticks(range(5))
     ax.set_xticklabels(models)
     #plt.xlabel("Model")
-    plt.title(f"Amount of the collected data ({len(ensemble.continuous_training_data)}) per model and class.\n {len(ensemble.missed_data)} datapoints were not classified.")
+    
+    plt.title(f"Amount of the collected data ({len(ensemble.continuous_training_data)}) per model and class.")
+    if ensemble.missed_data is not None:
+        plt.subtitle("{len(ensemble.missed_data)} datapoints were not classified.")
     plt.legend(title="Class", loc='center left', bbox_to_anchor=(1, 0.5), framealpha=1)
     plt.show()
         
