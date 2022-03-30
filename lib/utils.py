@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from os import listdir
+from os.path import isfile, join
+import glob
 
 
 def plot(x):
@@ -66,7 +69,7 @@ def plot_collected_data(ensemble):
         ax.bar(x+dx[i], df_all[:,i], width=d, label="_Hidden", color='black')
         ax.bar(x+dx[i], df_pos[:,i], width=d, label="{}".format(i))
         
-    models = ["Deep NN", "Broad NN", "Mixed NN", "Big CNN", "Small CNN"]
+    models = ["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"]
     ax.set_xticks(range(5))
     ax.set_xticklabels(models)
     #plt.xlabel("Model")
@@ -95,4 +98,15 @@ def run_data(ensemble, data=None, generator=None, datapoints=10000):
         for (img, label) in data.unbatch().batch(256):
             _ = ensemble(img, collect=True)
 
-        
+
+def get_file_names(directory):
+    return sorted(glob.glob(directory + "/*"))
+
+
+def plot_cycles(ensemble, cycle_name):
+    filepaths = get_file_names("../continuous_training_data/"+cycle_name)
+    
+    for i, idx in enumerate(range(0, len(filepaths)-1, 2)):
+        print("Cycle: ", i)
+        ensemble.load_data(filepaths[idx:idx+2])
+        plot_collected_data(ensemble)
