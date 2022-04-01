@@ -6,8 +6,9 @@ import importlib
 
 from lib import data, networks, training, utils
 
+
 if __name__ == '__main__':
-    train_ds_pre, train_ds_post, test_ds, generator = data.load_data()
+    train_ds_pre, train_ds_post, test_ds, train_generator, test_generator = data.load_data()
 
     num_classes = 10
     # Small model
@@ -32,30 +33,10 @@ if __name__ == '__main__':
     utils.run_data(ensemble, generator=generator)
 
     #tf.data.experimental.save(ensemble.continous_training_data, '../datasets/ensemble_rundata_ro30', compression='GZIP')
-    """
     ensemble.set_continuous_training_data(tf.data.experimental.load('../datasets/ensemble_rundata_ro30', compression='GZIP'))
     print(len(ensemble.continous_training_data))
 
     _,_,_ = training.continuous_training(ensemble, generator, epochs=5)
-
-    _, acc = training.test(ensemble, generator, tf.keras.losses.CategoricalCrossentropy())
-    print(acc)
-
-    utils.run_data(ensemble, generator=generator)
-
-    _,_,_ = training.continuous_training(ensemble, generator, epochs=5)
-
-    _, acc = training.test(ensemble, generator, tf.keras.losses.CategoricalCrossentropy())
-    print(acc)
-
-    utils.run_data(ensemble, generator=generator)
-
-    _,_,_ = training.continuous_training(ensemble, generator, epochs=5)
-
-    _, acc = training.test(ensemble, generator, tf.keras.losses.CategoricalCrossentropy())
-    print(acc)
-
-    utils.run_data(ensemble, generator=generator)"""
     
 
 
