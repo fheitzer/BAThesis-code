@@ -193,12 +193,9 @@ def cycle(ensemble, train_generator, test_generator, epochs=10, batch_size=1, cy
     starting_losses = np.zeros(len(ensemble.models))
     starting_accuracies = np.zeros(len(ensemble.models))
     
-    #filepaths = np.empty((cycles, 2), dtype=object)
-    
     # Initialize the loss: categorical cross entropy.
     cross_entropy_loss = tf.keras.losses.CategoricalCrossentropy()
     
-    """
     # testing once before we begin
     print("Testing before training")
     print("Ensemble:")
@@ -211,7 +208,7 @@ def cycle(ensemble, train_generator, test_generator, epochs=10, batch_size=1, cy
         test_loss, test_accuracy = test(model, test_generator, cross_entropy_loss)
         print(f"LOSS {test_loss} ::: ACC {test_accuracy}")
         starting_losses[idx] = test_loss
-        starting_accuracies[idx] = test_accuracy"""
+        starting_accuracies[idx] = test_accuracy
     
     for cycle in range(cycles):
         # Collect data to train on
