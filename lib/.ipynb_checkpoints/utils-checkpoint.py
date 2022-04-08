@@ -112,22 +112,35 @@ def plot_cycles(ensemble, cycle_name):
         plot_collected_data(ensemble)
     
     accloss = np.load('../continuous_training_data/'+cycle_name+'_accloss.npz')
+    
     ensemble_acc = accloss['ensemble_accuracies']
+    for i, row in enumerate(np.flip(ensemble_acc, 0)):
+        if np.max(row) != 0:
+            if i == 0:
+                break
+            ensemble_acc = ensemble_acc[:-i]
+            break
     ensemble_acc = pd.DataFrame(ensemble_acc,
-                 columns=['Model_'+str(i) for i in range(ensemble_acc.shape[1])]).head(ensemble_acc.shape[1])
+                                columns=['Model_'+str(i) for i in range(ensemble_acc.shape[1])])
     
     ensemble_acc.plot(title="Ensemble Accuracy after each model's retraining per cycle", 
                       xlabel="Cycle", 
                       ylabel="Test accuracy", 
-                      xticks=range(ensemble_acc.shape[1]))
+                      xticks=range(ensemble_acc.shape[0]))
     
     mta = accloss['models_test_accuracies'][:,:,-1]
+    for i, row in enumerate(np.flip(mta, 0)):
+        if np.max(row) != 0:
+            if i == 0:
+                break
+            mta = mta[:-i]
+            break
     mta = pd.DataFrame(mta,
-                       columns=['Model_'+str(i) for i in range(mta.shape[1])]).head(mta.shape[1])
+                       columns=['Model_'+str(i) for i in range(mta.shape[1])])
     
     mta.plot(title="Model accuracy after its retraining per cycle",
              xlabel="Cycle",
              ylabel="Test accuracy",
-             xticks=range(mta.shape[1]))
+             xticks=range(mta.shape[0]))
     
 
