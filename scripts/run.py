@@ -37,4 +37,4 @@ if __name__ == '__main__':
                    batch_size=1,
                    cycles=10,
                    data_per_cycle=25000,
-                   name="TestSSH")
+		   name="SSHTEST_3_1_10_25000")
