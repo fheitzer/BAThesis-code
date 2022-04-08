@@ -11,21 +11,20 @@ from lib import data, networks, training, utils
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Configure the run.")
     
-    parser.add_argument('name', type=string,
-                        help='Name for the run')
-    parser.add_argument('rotation', type=int, 
-                        help='Amount of rotation in new data')
-    parser.add_argument('epochs', type=int,
-                        help='Amount of epochs per cycle per model')
-    parser.add_argument('batch_size', type=int,
-                        help='Batch size each epoch')
-    parser.add_argument('cycles', type=int,
-                        help='Amount of cycles')
-    parser.add_argument('data_per_cycle', type=int,
-                        help='Amount of data to look at before cycle')
+    parser.add_argument('--name', type=string,
+                        help='Name for the run', required=True)
+    parser.add_argument('--rotation', type=int, 
+                        help='Amount of rotation in new data', required=True)
+    parser.add_argument('--epochs', type=int,
+                        help='Amount of epochs per cycle per model', required=True)
+    parser.add_argument('--batch_size', type=int,
+                        help='Batch size each epoch', required=True)
+    parser.add_argument('--cycles', type=int,
+                        help='Amount of cycles', required=True)
+    parser.add_argument('--data_per_cycle', type=int,
+                        help='Amount of data to look at before cycle', required=True)
     
     args = parser.parse_args()
-    
     
     train_ds_pre, train_ds_post, test_ds, train_generator, test_generator = data.load_data(rotation=args.rotation)
 
