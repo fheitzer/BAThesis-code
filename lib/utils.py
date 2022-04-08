@@ -110,3 +110,24 @@ def plot_cycles(ensemble, cycle_name):
         print("Cycle: ", i)
         ensemble.load_data(filepaths[idx:idx+2])
         plot_collected_data(ensemble)
+    
+    accloss = np.load('../continuous_training_data/'+cycle_name+'_accloss.npz')
+    ensemble_acc = accloss['ensemble_accuracies']
+    ensemble_acc = pd.DataFrame(ensemble_acc,
+                 columns=['Model_'+str(i) for i in range(ensemble_acc.shape[1])]).head(ensemble_acc.shape[1])
+    
+    ensemble_acc.plot(title="Ensemble Accuracy after each model's retraining per cycle", 
+                      xlabel="Cycle", 
+                      ylabel="Test accuracy", 
+                      xticks=range(ensemble_acc.shape[1]))
+    
+    mta = accloss['models_test_accuracies'][:,:,-1]
+    mta = pd.DataFrame(mta,
+                       columns=['Model_'+str(i) for i in range(mta.shape[1])]).head(mta.shape[1])
+    
+    mta.plot(title="Model accuracy after its retraining per cycle",
+             xlabel="Cycle",
+             ylabel="Test accuracy",
+             xticks=range(mta.shape[1]))
+    
+
