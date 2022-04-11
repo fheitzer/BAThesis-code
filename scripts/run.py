@@ -11,7 +11,7 @@ from lib import data, networks, training, utils
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Configure the run.")
     
-    parser.add_argument('--name', type=string,
+    parser.add_argument('--name', type=str,
                         help='Name for the run', required=True)
     parser.add_argument('--rotation', type=int, 
                         help='Amount of rotation in new data', required=True)
@@ -25,7 +25,7 @@ if __name__ == '__main__':
                         help='Amount of data to look at before cycle', required=True)
     
     args = parser.parse_args()
-    
+    print(args)
     train_ds_pre, train_ds_post, test_ds, train_generator, test_generator = data.load_data(rotation=args.rotation)
 
     num_classes = 10
@@ -49,8 +49,11 @@ if __name__ == '__main__':
     model5.load_weights('../models/CNN3264extra')
     
     name = args.name
-    for arg in vars(args):
-        name += '_' + str(args[arg])
+    name += "_" + str(args.rotation)
+    name += "_" + str(args.epochs)
+    name += "_" + str(args.batch_size)
+    name += "_" + str(args.cycles)
+    name += "_" + str(args.data_per_cycle)
     
     training.cycle(ensemble,
                    train_generator,
