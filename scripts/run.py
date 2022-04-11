@@ -49,11 +49,11 @@ if __name__ == '__main__':
     model5.load_weights('../models/CNN3264extra')
     
     name = args.name
-    name += "_" + str(args.rotation)
-    name += "_" + str(args.epochs)
-    name += "_" + str(args.batch_size)
-    name += "_" + str(args.cycles)
-    name += "_" + str(args.data_per_cycle)
+    name += "_r" + str(args.rotation)
+    name += "_e" + str(args.epochs)
+    name += "_b" + str(args.batch_size)
+    name += "_c" + str(args.cycles)
+    name += "_d" + str(args.data_per_cycle)
     
     training.cycle(ensemble,
                    train_generator,
