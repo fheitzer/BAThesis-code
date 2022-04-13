@@ -120,6 +120,7 @@ def plot_cycles(ensemble, cycle_name):
                 break
             ensemble_acc = ensemble_acc[:-i]
             break
+            
     ensemble_acc = pd.DataFrame(ensemble_acc,
                                 columns=['Model_'+str(i) for i in range(ensemble_acc.shape[1])])
     
@@ -144,3 +145,55 @@ def plot_cycles(ensemble, cycle_name):
              xticks=range(mta.shape[0]))
     
 
+def plot_cycles_oneline(ensemble, cycle_name):
+    filepaths = get_file_names("../continuous_training_data/"+cycle_name)
+    
+    for i, idx in enumerate(range(0, len(filepaths)-1, 2)):
+        print("Cycle: ", i)
+        ensemble.load_data(filepaths[idx:idx+2])
+        plot_collected_data(ensemble)
+    
+    accloss = np.load('../continuous_training_data/'+cycle_name+'_accloss.npz')
+    
+    ensemble_acc = accloss['ensemble_accuracies']
+    for i, row in enumerate(np.flip(ensemble_acc, 0)):
+        if np.max(row) != 0:
+            if i == 0:
+                break
+            ensemble_acc = ensemble_acc[:-i]
+            break
+    ensemble_acc = ensemble_acc.flatten()
+    ensemble_acc = pd.DataFrame(ensemble_acc)
+    
+    ensemble_acc.plot(title="Ensemble Accuracy after each model's retraining per cycle", 
+                      xlabel="Cycle", 
+                      ylabel="Test accuracy")
+    
+    mta = accloss['models_test_accuracies'][:,:,-1]
+    for i, row in enumerate(np.flip(mta, 0)):
+        if np.max(row) != 0:
+            if i == 0:
+                break
+            mta = mta[:-i]
+            break
+    mta = pd.DataFrame(mta)
+    
+    mta.plot(title="Model accuracy after its retraining per cycle",
+             xlabel="Cycle",
+             ylabel="Test accuracy")
+    
+
+def fix_numeration_in_dir(name):
+    name = '../continuous_training_data/SSH4_r25_e1_b1_c24_d15000'
+    files = os.listdir(name)
+    for file in files:
+        for idx, char in enumerate(file):
+            if char == '_':
+                dst = file[:idx]
+                dst = "%03d" % int(dst)
+                dst += file[idx:]
+                break
+
+
+        os.rename(name + "/" + file,
+                 name + "/" + dst)
