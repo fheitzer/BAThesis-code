@@ -10,6 +10,27 @@ def bi_onehot(y, bi_val):
     else:
         return tf.one_hot(1, 2)
         
+        
+def load_generator(rotation=5):
+    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
+    
+    train_images = train_images / 255
+    test_images = test_images / 255
+    
+    datagenerator = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=rotation)
+
+    train_generator = datagenerator.flow(np.reshape(test_images, (10000, 28, 28, 1)),
+                                         test_labels,
+                                         batch_size=1,
+                                         seed=21465)
+    
+    test_generator = datagenerator.flow(np.reshape(train_images[50000:], (10000, 28, 28, 1)),
+                                        train_labels[50000:],
+                                        batch_size=1,
+                                        seed=49074)
+    
+    return train_generator, test_generator
+    
 
 def load_data(binary=False, bi_range=[0,1,2,3,4,5], bi_val=1, batch_size=128, rotation=30):
     (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
