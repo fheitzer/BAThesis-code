@@ -32,4 +32,4 @@ cd ..
 source /net/projects/scratch/winter/valid_until_31_July_2022/fheitzer/miniconda3/etc/profile.d/conda.sh
 conda activate ba
 cd /net/projects/scratch/winter/valid_until_31_July_2022/fheitzer/BAThesis-code/scripts
-python run.py --name "$name" --rotation "$rotation" --epochs "$epochs" --batch_size "$batch_size" --cycles "$cycles" --data_per_cycle $data_per_cycle
+python run.py --name "$name" --rotation "$rotation" --epochs "$epochs" --batch_size "$batch_size" --cycles "$cycles" --data_per_cycle "$data_per_cycle"
