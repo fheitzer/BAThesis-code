@@ -219,8 +219,8 @@ def cycle(ensemble, train_generator, test_generator, epochs=10, batch_size=1, cy
         
         # Save collected data to plot it later
         timestamp = datetime.now().strftime('%b-%d-%Y_%H%M%S%f')
-        filepaths0 = '../continuous_training_data/' + name + '/' + str(cycle) + '_' + timestamp
-        filepaths1 = '../continuous_training_data/' + name + '/' + str(cycle) + '_miss_' + timestamp
+        filepaths0 = '../continuous_training_data/' + name + '/' + "%03d" % cycle + '_' + timestamp
+        filepaths1 = '../continuous_training_data/' + name + '/' + "%03d" % cycle + '_miss_' + timestamp
         tf.data.experimental.save(ensemble.continuous_training_data,
                                   filepaths0,
                                   compression='GZIP')
