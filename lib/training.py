@@ -191,7 +191,7 @@ def cycle(ensemble, test_ds, train_generator, test_generator, epochs=1, batch_si
     ensemble_losses = np.zeros((cycles, len(ensemble.models)))
     ensemble_accuracies = np.zeros((cycles, len(ensemble.models)))
     ensemble_accuracies_norotation = np.zeros((cycles + 1))
-        
+    
     # Initialize the loss: categorical cross entropy.
     cross_entropy_loss = tf.keras.losses.CategoricalCrossentropy()
     
@@ -299,7 +299,9 @@ def cycle_increasing_augmentation(ensemble, test_ds, target_rotation=360, epochs
     for cycle in range(cycles):
         # Collect data to train on
         print("Looking at new data...")
-        train_generator, test_generator = lib.data.load_generator(rotation=int((target_rotation / cycles) * cycle + 1))
+        current_rotation = int((target_rotation / cycles) * cycle + 1)
+        print(f"with a rotation of {current_rotation}")
+        train_generator, test_generator = lib.data.load_generator(rotation=current_rotation)
         lib.utils.run_data(ensemble, generator=train_generator, datapoints=data_per_cycle)
         print("Continuous training data collected:", len(ensemble.continuous_training_data),
               "Missed data:", len(ensemble.missed_data))
