@@ -17,6 +17,9 @@ def load_generator(rotation=5):
     train_images = train_images / 255
     test_images = test_images / 255
     
+    test_labels = tf.keras.utils.to_categorical(test_labels, num_classes=10)
+    train_labels = tf.keras.utils.to_categorical(train_labels, num_classes=10)
+    
     datagenerator = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=rotation)
 
     train_generator = datagenerator.flow(np.reshape(test_images, (10000, 28, 28, 1)),

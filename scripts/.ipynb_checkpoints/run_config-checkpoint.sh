@@ -7,8 +7,8 @@
 #cd /net/projects/scratch/winter/valid_until_31_July_2022/fheitzer/BAThesis-code/scripts
 #bash runscript.sh -n Test -r 30 -e 1 -b 1 -c 1 -d 1000
 
-name="SSH4"
-rotation=25
+name="Increment"
+rotation=15
 epochs=1
 batch_size=1
 cycles=24

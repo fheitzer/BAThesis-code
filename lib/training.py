@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import lib.utils
+import lib.data
 from datetime import datetime
 
 
@@ -126,7 +127,7 @@ def pretraining(model, train_dataset, test_dataset, epochs=10):
         
     
 @tf.autograph.experimental.do_not_convert
-def continuous_training(ensemble, test_generator, epochs=10, batch_size=1, cycles=1, data_per_cycle=10000):
+def continuous_training(ensemble, test_generator, epochs=1, batch_size=1, cycles=1, data_per_cycle=10000):
     tf.keras.backend.clear_session()
 
     # Hyperparameters
@@ -162,12 +163,13 @@ def continuous_training(ensemble, test_generator, epochs=10, batch_size=1, cycle
                 train_loss = train_step(model, img, target, cross_entropy_loss, optimizer)
                 running_average = running_average_factor * running_average + (1 - running_average_factor) * train_loss
             train_losses[idx,epoch] = running_average
-
+            """
             # test model after each epoch
             test_loss, test_accuracy = test(model, test_generator, cross_entropy_loss)
             test_losses[idx, epoch] = test_loss
             test_accuracies[idx, epoch] = test_accuracy
             print(f"LOSS {test_loss} ::: ACC {test_accuracy} : {test_accuracy - test_accuracies[idx,epoch-1]}")
+            """
         
         # Test ensemble after each model's training
         print("Ensemble:")
@@ -223,8 +225,8 @@ def cycle(ensemble, test_ds, train_generator, test_generator, epochs=1, batch_si
         
         # Save collected data to plot it later
         timestamp = datetime.now().strftime('%b-%d-%Y_%H%M%S%f')
-        filepaths0 = '../continuous_training_data/' + name + '/' + "%03d" % cycle + '_' + timestamp
-        filepaths1 = '../continuous_training_data/' + name + '/' + "%03d" % cycle + '_miss_' + timestamp
+        filepaths0 = '../continuous_training_data/' + name + '/' + "%04d" % cycle + '_' + timestamp
+        filepaths1 = '../continuous_training_data/' + name + '/' + "%04d" % cycle + '_miss_' + timestamp
         tf.data.experimental.save(ensemble.continuous_training_data,
                                   filepaths0,
                                   compression='GZIP')
@@ -276,8 +278,8 @@ def cycle_increasing_augmentation(ensemble, test_ds, target_rotation=360, epochs
     ensemble_accuracies = np.zeros((cycles, len(ensemble.models)))
     ensemble_accuracies_norotation = np.zeros((cycles + 1))
     
-    starting_losses = np.zeros(len(ensemble.models))
-    starting_accuracies = np.zeros(len(ensemble.models))
+    #starting_losses = np.zeros(len(ensemble.models))
+    #starting_accuracies = np.zeros(len(ensemble.models))
     
     # Initialize the loss: categorical cross entropy.
     cross_entropy_loss = tf.keras.losses.CategoricalCrossentropy()
@@ -289,6 +291,7 @@ def cycle_increasing_augmentation(ensemble, test_ds, target_rotation=360, epochs
     ensemble_accuracies_norotation[0] = starting_ensemble_accuracy
     print(f"ACC {starting_ensemble_accuracy}")
     
+    """
     # Test the models before training them
     for idx, model in enumerate(ensemble.models):
         print('Model: ___ ' + str(idx))
@@ -296,19 +299,20 @@ def cycle_increasing_augmentation(ensemble, test_ds, target_rotation=360, epochs
         print(f"LOSS {test_loss} ::: ACC {test_accuracy}")
         starting_losses[idx] = test_loss
         starting_accuracies[idx] = test_accuracy
+    """
     
     for cycle in range(cycles):
         # Collect data to train on
         print("Looking at new data...")
-        train_generator, test_generator = data.load_generator(rotation=int((target_rotation / cycles) * cycle + 1))
+        train_generator, test_generator = lib.data.load_generator(rotation=int((target_rotation / cycles) * cycle + 1))
         lib.utils.run_data(ensemble, generator=train_generator, datapoints=data_per_cycle)
         print("Continuous training data collected:", len(ensemble.continuous_training_data),
               "Missed data:", len(ensemble.missed_data))
         
         # Save collected data to plot it later
         timestamp = datetime.now().strftime('%b-%d-%Y_%H%M%S%f')
-        filepaths0 = '../continuous_training_data/' + name + '/' + "%03d" % cycle + '_' + timestamp
-        filepaths1 = '../continuous_training_data/' + name + '/' + "%03d" % cycle + '_miss_' + timestamp
+        filepaths0 = '../continuous_training_data/' + name + '/' + "%04d" % cycle + '_' + timestamp
+        filepaths1 = '../continuous_training_data/' + name + '/' + "%04d" % cycle + '_miss_' + timestamp
         tf.data.experimental.save(ensemble.continuous_training_data,
                                   filepaths0,
                                   compression='GZIP')
