@@ -163,13 +163,12 @@ def continuous_training(ensemble, test_generator, epochs=1, batch_size=1, cycles
                 train_loss = train_step(model, img, target, cross_entropy_loss, optimizer)
                 running_average = running_average_factor * running_average + (1 - running_average_factor) * train_loss
             train_losses[idx,epoch] = running_average
-            """
+            
             # test model after each epoch
             test_loss, test_accuracy = test(model, test_generator, cross_entropy_loss)
             test_losses[idx, epoch] = test_loss
             test_accuracies[idx, epoch] = test_accuracy
             print(f"LOSS {test_loss} ::: ACC {test_accuracy} : {test_accuracy - test_accuracies[idx,epoch-1]}")
-            """
         
         # Test ensemble after each model's training
         print("Ensemble:")
@@ -187,15 +186,12 @@ def cycle(ensemble, test_ds, train_generator, test_generator, epochs=1, batch_si
     
     # Initiate data collection
     train_losses = np.zeros((cycles, len(ensemble.models), epochs))
-    test_losses = np.zeros((cycles, len(ensemble.models), epochs))
-    test_accuracies = np.zeros((cycles, len(ensemble.models), epochs))
+    test_losses = np.zeros((cycles+1, len(ensemble.models), epochs))
+    test_accuracies = np.zeros((cycles+1, len(ensemble.models), epochs))
     ensemble_losses = np.zeros((cycles, len(ensemble.models)))
     ensemble_accuracies = np.zeros((cycles, len(ensemble.models)))
     ensemble_accuracies_norotation = np.zeros((cycles + 1))
-    
-    starting_losses = np.zeros(len(ensemble.models))
-    starting_accuracies = np.zeros(len(ensemble.models))
-    
+        
     # Initialize the loss: categorical cross entropy.
     cross_entropy_loss = tf.keras.losses.CategoricalCrossentropy()
     
@@ -206,15 +202,14 @@ def cycle(ensemble, test_ds, train_generator, test_generator, epochs=1, batch_si
     ensemble_accuracies_norotation[0] = starting_ensemble_accuracy
     print(f"ACC {starting_ensemble_accuracy}")
     
-    """
     # Test the models before training them
     for idx, model in enumerate(ensemble.models):
         print('Model: ___ ' + str(idx))
         test_loss, test_accuracy = test(model, test_generator, cross_entropy_loss)
         print(f"LOSS {test_loss} ::: ACC {test_accuracy}")
-        starting_losses[idx] = test_loss
-        starting_accuracies[idx] = test_accuracy
-    """
+        test_losses[0,idx,:] = test_loss
+        test_accuracies[0,idx,:] = test_accuracy
+    
     
     for cycle in range(cycles):
         # Collect data to train on
@@ -249,8 +244,8 @@ def cycle(ensemble, test_ds, train_generator, test_generator, epochs=1, batch_si
         ensemble_accuracies_norotation[cycle + 1] = ensemble_accuracy_norotation
         
         train_losses[cycle,:,:] = a
-        test_losses[cycle,:,:] = b
-        test_accuracies[cycle,:,:] = c
+        test_losses[cycle+1,:,:] = b
+        test_accuracies[cycle+1,:,:] = c
         ensemble_losses[cycle,:] = d
         ensemble_accuracies[cycle,:] = e
         
