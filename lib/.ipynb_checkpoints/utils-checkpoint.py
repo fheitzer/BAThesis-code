@@ -5,6 +5,7 @@ import tensorflow as tf
 from os import listdir
 from os.path import isfile, join
 import glob
+from IPython.display import clear_output
 
 
 def plot(x):
@@ -145,19 +146,26 @@ def plot_cycles(ensemble, cycle_name):
              xticks=range(mta.shape[0]))
     
 
-def plot_cycles_oneline(ensemble, cycle_name, increasing_rotation=False):
+def plot_cycles_oneline(ensemble, cycle_name, only_some=[]):
     filepaths = get_file_names("../continuous_training_data/" + cycle_name)
-    
+    if only_some:
+        filepaths = [filepaths[i] for i in only_some]
     for i, idx in enumerate(range(0, len(filepaths)-1, 2)):
         print("Cycle: ", i)
         ensemble.load_data(filepaths[idx:idx+2])
+        clear_output(wait=True)
         plot_collected_data(ensemble)
     
-    plot_cycle_accuracies(cycle_name, increasing_rotation)
+    #plot_cycle_accuracies(cycle_name, increasing_rotation)
 
         
 def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
     accloss = np.load('../continuous_training_data/' + cycle_name + '_accloss.npz')
+    
+    plot_n = 2
+    if increasing_rotation:
+        plot_n = 3
+    fig, ax = plt.subplots(plot_n, figsize=(12,24))
     
     ensemble_acc = accloss['ensemble_accuracies']
     for i, row in enumerate(np.flip(ensemble_acc, 0)):
@@ -175,7 +183,8 @@ def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
                       y=0,
                       title="Ensemble Accuracy after each model's retraining per cycle", 
                       xlabel="Cycle", 
-                      ylabel="Test accuracy")
+                      ylabel="Test accuracy",
+                      ax=ax[0])
     
     mta = accloss['models_test_accuracies'][:,:,-1]
     border = 0
@@ -191,7 +200,8 @@ def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
     
     mta.plot(title="Model accuracy after its retraining per cycle",
              xlabel="Cycle",
-             ylabel="Test accuracy")
+             ylabel="Test accuracy",
+             ax=ax[1])
     
     if increasing_rotation:
         old_task = accloss['ensemble_accuracies_norotation']
@@ -201,11 +211,106 @@ def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
             
         old_task.plot(title="Ensemble accuracy on the task it was originally trained for",
                       xlabel="Cycle",
-                      ylabel="Test accuracy")
+                      ylabel="Test accuracy",
+                      ax=ax[2])
+        
+
+def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
+    rows = 2
+    columns = len(cycle_names)
+    if increasing_rotation:
+        rows = 3
+    fig, ax = plt.subplots(rows,
+                           columns, 
+                           figsize=(6 * rows, 4 * columns), 
+                           sharey=True, 
+                           sharex=True)
+    fig.suptitle("Accuracies for 1, 2, and 3 cycles per degree of rotation", 
+                 fontsize=20)
+    #fig.tight_layout(h_pad=5, w_pad=5)
+    plt.subplots_adjust(wspace=0.1, hspace=0.3)
+    fig.text(0.5, 0.04, 'Test Accuracy', ha='center', fontsize=18)
+    fig.text(0.04, 0.5, 'Cycle', va='center', rotation='vertical', fontsize=18)
+    for idx, cycle_name in enumerate(cycle_names):
+        accloss = np.load('../continuous_training_data/' + cycle_name + '_accloss.npz')
+        ensemble_acc = accloss['ensemble_accuracies']
+        for i, row in enumerate(np.flip(ensemble_acc, 0)):
+            if np.max(row) != 0:
+                if i == 0:
+                    break
+                ensemble_acc = ensemble_acc[:-i]
+                break
+
+        ensemble_acc = ensemble_acc.flatten()
+        ensemble_acc = pd.DataFrame(ensemble_acc)
+        ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
+        ax[0,idx].plot(ensemble_acc['x'], ensemble_acc[0])
+        ax[0,1].set_title("Ensemble Accuracy\n after each model's retraining per cycle", 
+                            fontsize=18)
+        ax[0,idx].grid(color="black", alpha=0.7, axis="y")
+        ax[0,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
+
+
+        """
+        ensemble_acc.plot(x='x', 
+                          y=0,
+                          title="Ensemble Accuracy after each model's retraining per cycle", 
+                          xlabel="Cycle", 
+                          ylabel="Test accuracy",
+                          ax=ax[0,idx])
+        """
+
+        mta = accloss['models_test_accuracies'][:,:,-1]
+        border = 0
+        for i, row in enumerate(np.flip(mta, 0)):
+            if np.max(row) != 0:
+                if i == 0:
+                    break
+                mta = mta[:-i]
+                border = i
+                break
+
+        mta = pd.DataFrame(mta)
+        
+        
+        ax[1,idx].plot(mta)
+        ax[1,1].set_title("Model accuracy\n after its retraining per cycle", 
+                            fontsize=18)
+        ax[1,idx].grid(color="black", alpha=0.7, axis="y")
+        ax[1,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
+
+
+        """
+        mta.plot(title="Model accuracy after its retraining per cycle",
+                 xlabel="Cycle",
+                 ylabel="Test accuracy",
+                 ax=ax[1,idx])
+        """
+
+        if increasing_rotation:
+            old_task = accloss['ensemble_accuracies_norotation']
+
+            old_task = old_task[:-border]
+            old_task = pd.DataFrame(old_task)
+            
+            ax[2,1].set_title("Ensemble accuracy\n on the task it was originally trained for", 
+                                fontsize=18)
+            ax[2,idx].plot(old_task)
+            ax[2,idx].grid(color="black", alpha=0.7, axis="y")
+            ax[2,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
+
+            """
+            old_task.plot(title="Ensemble accuracy on the task it was originally trained for",
+                          xlabel="Cycle",
+                          ylabel="Test accuracy",
+                          ax=ax[2,idx])
+            """
     
+    plt.show()
+
 
 def fix_numeration_in_dir(name):
-    name = '../continuous_training_data/SSH4_r25_e1_b1_c24_d15000'
+    name = '../continuous_training_data/' + name
     files = os.listdir(name)
     for file in files:
         for idx, char in enumerate(file):
