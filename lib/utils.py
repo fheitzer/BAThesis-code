@@ -145,15 +145,19 @@ def plot_cycles(ensemble, cycle_name):
              xticks=range(mta.shape[0]))
     
 
-def plot_cycles_oneline(ensemble, cycle_name):
-    filepaths = get_file_names("../continuous_training_data/"+cycle_name)
+def plot_cycles_oneline(ensemble, cycle_name, increasing_rotation=False):
+    filepaths = get_file_names("../continuous_training_data/" + cycle_name)
     
     for i, idx in enumerate(range(0, len(filepaths)-1, 2)):
         print("Cycle: ", i)
         ensemble.load_data(filepaths[idx:idx+2])
         plot_collected_data(ensemble)
     
-    accloss = np.load('../continuous_training_data/'+cycle_name+'_accloss.npz')
+    plot_cycle_accuracies(cycle_name, increasing_rotation)
+
+        
+def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
+    accloss = np.load('../continuous_training_data/' + cycle_name + '_accloss.npz')
     
     ensemble_acc = accloss['ensemble_accuracies']
     for i, row in enumerate(np.flip(ensemble_acc, 0)):
@@ -162,25 +166,42 @@ def plot_cycles_oneline(ensemble, cycle_name):
                 break
             ensemble_acc = ensemble_acc[:-i]
             break
+    
     ensemble_acc = ensemble_acc.flatten()
     ensemble_acc = pd.DataFrame(ensemble_acc)
+    ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
     
-    ensemble_acc.plot(title="Ensemble Accuracy after each model's retraining per cycle", 
+    ensemble_acc.plot(x='x', 
+                      y=0,
+                      title="Ensemble Accuracy after each model's retraining per cycle", 
                       xlabel="Cycle", 
                       ylabel="Test accuracy")
     
     mta = accloss['models_test_accuracies'][:,:,-1]
+    border = 0
     for i, row in enumerate(np.flip(mta, 0)):
         if np.max(row) != 0:
             if i == 0:
                 break
             mta = mta[:-i]
+            border = i
             break
+                
     mta = pd.DataFrame(mta)
     
     mta.plot(title="Model accuracy after its retraining per cycle",
              xlabel="Cycle",
              ylabel="Test accuracy")
+    
+    if increasing_rotation:
+        old_task = accloss['ensemble_accuracies_norotation']
+                
+        old_task = old_task[:-border]
+        old_task = pd.DataFrame(old_task)
+            
+        old_task.plot(title="Ensemble accuracy on the task it was originally trained for",
+                      xlabel="Cycle",
+                      ylabel="Test accuracy")
     
 
 def fix_numeration_in_dir(name):
