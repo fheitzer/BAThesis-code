@@ -376,3 +376,43 @@ def classification_specialization_mean(ensemble, cycle_name):
     df.plot(title="Classification specialization index",
             xlabel="Cycle",
             ylabel="Index")
+    
+def plot_frozen_model(name):
+    accloss = np.load('../continuous_training_data/' + name + '_accloss.npz')
+
+    fig, ax = plt.subplots(2, figsize=(8,12))
+    
+    ensemble_acc = accloss['ensemble_accuracies']
+    for i, row in enumerate(np.flip(ensemble_acc, 0)):
+        if np.max(row) != 0:
+            if i == 0:
+                break
+            ensemble_acc = ensemble_acc[:-i]
+            break
+    
+    ensemble_acc = ensemble_acc.flatten()
+    ensemble_acc = pd.DataFrame(ensemble_acc)
+    #ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
+    
+    ensemble_acc.plot(title="Frozen Ensemble accuracy on increasingly augmented data", 
+                      xlabel="Rotation in degrees", 
+                      ylabel="Test accuracy",
+                      ax=ax[0])
+    
+    mta = accloss['models_test_accuracies'][:,:]
+    border = 0
+    for i, row in enumerate(np.flip(mta, 0)):
+        if np.max(row) != 0:
+            if i == 0:
+                break
+            mta = mta[:-i]
+            border = i
+            break
+                
+    mta = pd.DataFrame(mta)
+    
+    mta.plot(title="Frozen Model accuracy on increasingly augmented data",
+             xlabel="Rotation in degrees",
+             ylabel="Test accuracy",
+             ax=ax[1])
+    
