@@ -226,7 +226,7 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
                            sharey=True, 
                            sharex=True)
     # Plot description
-    fig.suptitle("Each column shows a separate simulation with 1, 2, and 3 cycles per rotation individually as indicated by the background grid", 
+    fig.suptitle("Each column shows a separate simulation with 1, 2, and 5 cycles per rotation as indicated by the background grid", 
                  fontsize=20)
     ax[0,1].set_title("Ensemble Accuracy\n on augmented data", 
                       fontsize=18)
@@ -281,7 +281,9 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
             
             ax[2,idx].plot(old_task)
             #ax[2,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
-            
+    
+    x_max = int(ax[1,1].get_xlim()[1])
+    #x_max = int(ax[1,1].get_xlim()[1] / 10) * 10
     for column in ax:
         for steps, row in zip([1,2,5],column):
             # No frame
@@ -291,7 +293,7 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
             row.spines['left'].set_visible(False)
             # grid -> only horizontal
             row.grid(color="black", alpha=0.7)
-            row.vlines(x=range(0,60,steps), ymin=0.7, ymax=1, color='grey', alpha=0.3)
+            row.vlines(x=range(0,x_max,steps), ymin=0.7, ymax=1, color='grey', alpha=0.3)
             
     ax[1,2].legend(["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"], 
                    loc='center left',
@@ -338,8 +340,8 @@ def get_specialization_index(ensemble):
         dist_normalized = label/n
         index[idx] = loss_func(dist_normalized, 
                           np.random.dirichlet(np.ones(len(ensemble.models))))
-        
     return index
+
         
 def classification_specialization(ensemble, cycle_name):
     filepaths = get_file_names("../continuous_training_data/"+cycle_name)
@@ -355,6 +357,7 @@ def classification_specialization(ensemble, cycle_name):
             ylabel="Index",
             figsize=(12,12))
     
+    
 def get_specialization_index_mean(ensemble):
     loss_func = tf.keras.losses.CategoricalCrossentropy()
     df = pivot_data(ensemble)
@@ -366,18 +369,32 @@ def get_specialization_index_mean(ensemble):
 
     return index
 
-def classification_specialization_mean(ensemble, cycle_name):
-    filepaths = get_file_names("../continuous_training_data/"+cycle_name)
-    cycles = int(len(filepaths)/2)
-    index = np.zeros((cycles))
-    for i, idx in enumerate(range(0, len(filepaths)-1, 2)):
-        ensemble.load_data(filepaths[idx:idx+2])
-        index[i] = get_specialization_index_mean(ensemble)
+
+def classification_specialization_mean(ensemble, cycle_name, legend=["1"]):
+    if type(cycle_name) is not list:
+        cycle_name = [cycle_name]
     
-    df = pd.DataFrame(index)
-    df.plot(title="Classification specialization index",
-            xlabel="Cycle",
-            ylabel="Index")
+    fig, ax = plt.subplots()
+    for cycle in cycle_name:
+        filepaths = get_file_names("../continuous_training_data/"+cycle)
+        cycles = int(len(filepaths)/2)
+        index = np.zeros((cycles))
+        for i, idx in enumerate(range(0, len(filepaths)-1, 2)):
+            ensemble.load_data(filepaths[idx:idx+2])
+            index[i] = get_specialization_index_mean(ensemble)
+
+        df = pd.DataFrame(index)
+        df.plot(title="Classification specialization index",
+                xlabel="Cycle",
+                ylabel="Index",
+                ax=ax)
+        
+    fig.suptitle("Index for class-specialization")
+    ax.legend(legend, 
+              loc='center left',
+              bbox_to_anchor=(1.04,0.5),
+              title="Cycles per Rotation")
+    
     
 def plot_frozen_model(name):
     accloss = np.load('../continuous_training_data/' + name + '_accloss.npz')
@@ -418,11 +435,11 @@ def plot_frozen_model(name):
              ylabel="Test accuracy",
              ax=ax[1])
 
-def plot_multiple_ensemble_accuracies(cycle_names):
+def plot_multiple_ensemble_accuracies(cycle_names, which="Jump"):
     fig, ax = plt.subplots()
     # Plot description
-    fig.suptitle("Ensemble accuracies on rotating data\n with individual amounts of cycles per rotation")
     ax.grid()
+    
     # Plot the data
     for idx, cycle_name in enumerate(cycle_names):
         # Get the data
@@ -441,9 +458,21 @@ def plot_multiple_ensemble_accuracies(cycle_names):
         ensemble_acc = pd.DataFrame(ensemble_acc)
         ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
         ax.plot(ensemble_acc['x'], ensemble_acc[0])
-    ax.legend(["1/5","1/3","1/2","1","2","3","5"], 
-              loc='center left',
-              bbox_to_anchor=(1.04,0.5),
-              title="Cycles per Rotation")
+        
     ax.set_xlabel("Cycle")
     ax.set_ylabel("Test Accuracy")
+    
+    if which == "Increment":
+        fig.suptitle("Ensemble accuracies on rotating data\n with individual amounts of cycles per rotation")
+        ax.legend(["1/5","1/3","1/2","1","2","3","5"], 
+                  loc='center left',
+                  bbox_to_anchor=(1.04,0.5),
+                  title="Cycles per Rotation")
+        
+    if which == "Jump":
+        fig.suptitle("Frozen model on data with different amounts of rotation")
+        ax.legend(["5","10","20","25"], 
+                  loc='center left',
+                  bbox_to_anchor=(1.04,0.5),
+                  title="Rotation")
+        
