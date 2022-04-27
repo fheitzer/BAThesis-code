@@ -56,8 +56,9 @@ if __name__ == '__main__':
     name += "_d" + str(args.data_per_cycle)
     
     training.cycle(ensemble,
-                   train_generator,
-                   test_generator,
+		   test_ds=test_ds,
+                   train_generator=train_generator,
+                   test_generator=test_generator,
                    epochs=args.epochs,
                    batch_size=args.batch_size,
                    cycles=args.cycles,

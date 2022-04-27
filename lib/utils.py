@@ -255,7 +255,7 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
         ensemble_acc = pd.DataFrame(ensemble_acc)
         ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
         ax[0,idx].plot(ensemble_acc['x'], ensemble_acc[0])
-        ax[0,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
+        #ax[0,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
         
         # Split
         mta = accloss['models_test_accuracies'][:,:,-1]
@@ -271,7 +271,7 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
         # Plot
         mta = pd.DataFrame(mta)
         ax[1,idx].plot(mta)
-        ax[1,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
+        #ax[1,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
         
         if increasing_rotation:
             old_task = accloss['ensemble_accuracies_norotation']
@@ -280,17 +280,19 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
             old_task = pd.DataFrame(old_task)
             
             ax[2,idx].plot(old_task)
-            ax[2,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
+            #ax[2,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
             
     for column in ax:
-        for row in column:
+        for steps, row in zip([1,2,5],column):
             # No frame
             row.spines['top'].set_visible(False)
             row.spines['right'].set_visible(False)
             row.spines['bottom'].set_visible(False)
             row.spines['left'].set_visible(False)
             # grid -> only horizontal
-            row.grid(color="black", alpha=0.7, axis="y")
+            row.grid(color="black", alpha=0.7)
+            row.vlines(x=range(0,60,steps), ymin=0.7, ymax=1, color='grey', alpha=0.3)
+            
     ax[1,2].legend(["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"], 
                    loc='center left',
                    bbox_to_anchor=(1.04,0.5))
@@ -415,4 +417,33 @@ def plot_frozen_model(name):
              xlabel="Rotation in degrees",
              ylabel="Test accuracy",
              ax=ax[1])
-    
+
+def plot_multiple_ensemble_accuracies(cycle_names):
+    fig, ax = plt.subplots()
+    # Plot description
+    fig.suptitle("Ensemble accuracies on rotating data\n with individual amounts of cycles per rotation")
+    ax.grid()
+    # Plot the data
+    for idx, cycle_name in enumerate(cycle_names):
+        # Get the data
+        accloss = np.load('../continuous_training_data/' + cycle_name + '_accloss.npz')
+        # Split the data
+        ensemble_acc = accloss['ensemble_accuracies']
+        # Cut off zero rows
+        for i, row in enumerate(np.flip(ensemble_acc, 0)):
+            if np.max(row) != 0:
+                if i == 0:
+                    break
+                ensemble_acc = ensemble_acc[:-i]
+                break
+        # Plot
+        ensemble_acc = ensemble_acc.flatten()
+        ensemble_acc = pd.DataFrame(ensemble_acc)
+        ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
+        ax.plot(ensemble_acc['x'], ensemble_acc[0])
+    ax.legend(["1/5","1/3","1/2","1","2","3","5"], 
+              loc='center left',
+              bbox_to_anchor=(1.04,0.5),
+              title="Cycles per Rotation")
+    ax.set_xlabel("Cycle")
+    ax.set_ylabel("Test Accuracy")
