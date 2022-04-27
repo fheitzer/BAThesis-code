@@ -346,6 +346,7 @@ def cycle_increasing_augmentation(ensemble, test_ds, target_rotation=360, epochs
                             ensemble_accuracies_norotation=ensemble_accuracies_norotation
                            )
 
+
 def cycle_increasing_augmentation_notraining(ensemble, test_ds, target_rotation=360, batch_size=1, cycles=4, name="%"):
     """Alternately going through new data and then training on the collected datapoints.
     Inbetween the collected data is saved to later be plotted."""
