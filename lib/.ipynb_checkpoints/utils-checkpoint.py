@@ -6,6 +6,8 @@ from os import listdir
 from os.path import isfile, join
 import glob
 from IPython.display import clear_output
+import matplotlib as mpl
+mpl.rcParams['text.usetex'] = False
 
 
 def plot(x):
@@ -86,8 +88,9 @@ def plot_collected_data(ensemble):
     plt.show()
         
 
-def run_data(ensemble, data=None, generator=None, datapoints=10000):
-    ensemble.reset_data()
+def run_data(ensemble, data=None, generator=None, datapoints=10000, save=False):
+    if not save:
+        ensemble.reset_data()
     
     if generator is not None:
         for idx, (img, label) in enumerate(generator):
@@ -475,4 +478,19 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump"):
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
                   title="Rotation")
+        
+    if which == "5cr_comparison":
+        fig.suptitle("5 cycles per rotation runs with different amounts of data per cycle")
+        ax.legend(["5,000", "10,000", "15,000"], 
+                  loc='center left',
+                  bbox_to_anchor=(1.04,0.5),
+                  title="Data per cycle")
+        
+    if which == "1cr15k_5cr3k":
+        fig.suptitle("One run has 5 times more cycles per rotation, the other has 5 times more data per cycle ")
+        ax.legend([r"1 $\dfrac{\mathrm{Cycle}}{\mathrm{rotation}}$ & 15,000 datapoints per cycle",
+                   r"5 $\dfrac{\mathrm{Cycles}}{\mathrm{rotation}}$ & 3,000 datapoints per cycle"], 
+                  loc='center left',
+                  bbox_to_anchor=(1.04,0.5),
+                  title="Run configurations")
         

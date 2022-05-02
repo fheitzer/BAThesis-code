@@ -26,7 +26,7 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     print(args)
-    train_ds_pre, train_ds_post, test_ds, train_generator, test_generator = data.load_data(rotation=args.rotation)
+    _, _, test_ds, _, _ = data.load_data(rotation=args.rotation)
 
     num_classes = 10
     # Small model

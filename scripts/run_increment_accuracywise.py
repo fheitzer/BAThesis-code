@@ -13,20 +13,20 @@ if __name__ == '__main__':
     
     parser.add_argument('--name', type=str,
                         help='Name for the run', required=True)
-    parser.add_argument('--rotation', type=int, 
-                        help='Amount of rotation in new data', required=True)
     parser.add_argument('--epochs', type=int,
                         help='Amount of epochs per cycle per model', required=True)
     parser.add_argument('--batch_size', type=int,
                         help='Batch size each epoch', required=True)
     parser.add_argument('--cycles', type=int,
                         help='Amount of cycles', required=True)
-    parser.add_argument('--data_per_cycle', type=int,
-                        help='Amount of data to look at before cycle', required=True)
+    parser.add_argument('--acc_threshold', type=float,
+                        help='Accuracy threshold for continuous training', required=True)
+    parser.add_argument('--data_step_size', type=int,
+                        help='Amount of data to look at each step', required=True)
     
     args = parser.parse_args()
     print(args)
-    train_ds_pre, train_ds_post, test_ds, train_generator, test_generator = data.load_data(rotation=args.rotation)
+    _, _, test_ds, _, _ = data.load_data(rotation=0)
 
     num_classes = 10
     # Small model
@@ -49,18 +49,17 @@ if __name__ == '__main__':
     model5.load_weights('../models/CNN3264extra')
     
     name = args.name
-    name += "_r" + str(args.rotation)
     name += "_e" + str(args.epochs)
     name += "_b" + str(args.batch_size)
     name += "_c" + str(args.cycles)
-    name += "_d" + str(args.data_per_cycle)
+    name += "_t" + str(args.acc_threshold)
+    name += "_d" + str(args.data_step_size)
     
-    training.cycle(ensemble,
-                   test_ds=test_ds,
-                   train_generator=train_generator,
-                   test_generator=test_generator,
-                   epochs=args.epochs,
-                   batch_size=args.batch_size,
-                   cycles=args.cycles,
-                   data_per_cycle=args.data_per_cycle,
-                   name=name)
+    training.cycle_increasing_augmentation_accuracywise(ensemble,
+                                                        test_ds,
+                                                        epochs=args.epochs,
+                                                        batch_size=args.batch_size,
+                                                        cycles=args.cycles,
+                                                        acc_threshold=args.acc_threshold,
+                                                        data_step_size=args.data_step_size,
+                                                        name=name)
