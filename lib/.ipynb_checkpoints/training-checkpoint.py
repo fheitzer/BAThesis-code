@@ -127,7 +127,7 @@ def pretraining(model, train_dataset, test_dataset, epochs=10):
         
     
 @tf.autograph.experimental.do_not_convert
-def continuous_training(ensemble, test_generator, epochs=1, batch_size=1, cycles=1, data_per_cycle=10000):
+def continuous_training(ensemble, test_generator, epochs=1, batch_size=1, data_per_cycle=10000):
     tf.keras.backend.clear_session()
 
     # Hyperparameters
@@ -237,7 +237,6 @@ def cycle(ensemble, test_ds, train_generator, test_generator, epochs=1, batch_si
                                             test_generator,
                                             epochs=epochs,
                                             batch_size=batch_size,
-                                            cycles=cycles,
                                             data_per_cycle=data_per_cycle)
         
         _, ensemble_accuracy_norotation = test(ensemble, test_ds, cross_entropy_loss)
@@ -325,7 +324,6 @@ def cycle_increasing_augmentation(ensemble, test_ds, target_rotation=360, epochs
                                             test_generator,
                                             epochs=epochs,
                                             batch_size=batch_size,
-                                            cycles=cycles,
                                             data_per_cycle=data_per_cycle)
         
         _, ensemble_accuracy_norotation = test(ensemble, test_ds, cross_entropy_loss)
@@ -348,7 +346,115 @@ def cycle_increasing_augmentation(ensemble, test_ds, target_rotation=360, epochs
                             ensemble_accuracies_norotation=ensemble_accuracies_norotation
                            )
 
-def cycle_increasing_augmentation_notraining(ensemble, test_ds, target_rotation=360, batch_size=1, cycles=4, data_per_cycle=10000, name="%"):
+def cycle_increasing_augmentation_accuracywise(ensemble, test_ds, epochs=1, batch_size=1, cycles=5, acc_threshold=0.9, data_step_size=1000, name="%"):
+    """Alternately going through new data and then training on the collected datapoints.
+    Inbetween the collected data is saved to later be plotted."""
+    
+    # Initiate data collection
+    train_losses = np.zeros((cycles, len(ensemble.models), epochs))
+    test_losses = np.zeros((cycles, len(ensemble.models), epochs))
+    test_accuracies = np.zeros((cycles, len(ensemble.models), epochs))
+    ensemble_losses = np.zeros((cycles, len(ensemble.models)))
+    ensemble_accuracies = np.zeros((cycles, len(ensemble.models)))
+    ensemble_accuracies_norotation = np.zeros((cycles + 1))
+    
+    #starting_losses = np.zeros(len(ensemble.models))
+    #starting_accuracies = np.zeros(len(ensemble.models))
+    
+    # Initialize the loss: categorical cross entropy.
+    cross_entropy_loss = tf.keras.losses.CategoricalCrossentropy()
+    
+    # testing once before we begin
+    print("Testing before training")
+    print("Ensemble:")
+    _, ensemble_acc = test(ensemble, test_ds, cross_entropy_loss)
+    ensemble_accuracies_norotation[0] = ensemble_acc
+    print(f"ACC {ensemble_acc}")
+    
+    """
+    # Test the models before training them
+    for idx, model in enumerate(ensemble.models):
+        print('Model: ___ ' + str(idx))
+        test_loss, test_accuracy = test(model, test_ds, cross_entropy_loss)
+        print(f"LOSS {test_loss} ::: ACC {test_accuracy}")
+        starting_losses[idx] = test_loss
+        starting_accuracies[idx] = test_accuracy
+    """
+    current_rotation = 0
+    
+    for cycle in range(cycles):
+        # Collect data to train on
+        print("Looking at new data...")
+        train_generator, test_generator = lib.data.load_generator(rotation=current_rotation)
+        _, ensemble_acc = test(ensemble, test_generator, cross_entropy_loss)
+        
+        if ensemble_acc > acc_threshold:
+            ensemble.reset_data()
+            
+        while ensemble_acc > acc_threshold:
+            print(f"with a rotation of {current_rotation}")
+            current_rotation += 1
+            train_generator, test_generator = lib.data.load_generator(rotation=current_rotation)
+            lib.utils.run_data(ensemble,
+                               generator=train_generator,
+                               datapoints=data_step_size,
+                               save=True)
+            print("Continuous training data collected:", len(ensemble.continuous_training_data),
+                  "Missed data:", len(ensemble.missed_data))
+            _, ensemble_acc = test(ensemble, test_generator, cross_entropy_loss)
+            
+        else:
+            a, b, c, d, e = continuous_training(ensemble,
+                                                test_generator,
+                                                epochs=epochs,
+                                                batch_size=batch_size,
+                                                data_per_cycle=data_per_cycle)
+            ensemble.reset_data()
+        
+        
+        # Save collected data to plot it later
+        timestamp = datetime.now().strftime('%b-%d-%Y_%H%M%S%f')
+        filepaths0 = '../continuous_training_data/' + name + '/' + "%04d" % cycle + '_' + timestamp
+        filepaths1 = '../continuous_training_data/' + name + '/' + "%04d" % cycle + '_miss_' + timestamp
+        tf.data.experimental.save(ensemble.continuous_training_data,
+                                  filepaths0,
+                                  compression='GZIP')
+        tf.data.experimental.save(ensemble.missed_data,
+                                  filepaths1,
+                                  compression='GZIP')
+        
+        print("Collected data is saved!")
+        
+        # run the cycle
+        print(f"Cycle: {cycle}")
+        a, b, c, d, e = continuous_training(ensemble,
+                                            test_generator,
+                                            epochs=epochs,
+                                            batch_size=batch_size,
+                                            data_per_cycle=data_per_cycle)
+        
+        _, ensemble_accuracy_norotation = test(ensemble, test_ds, cross_entropy_loss)
+        ensemble_accuracies_norotation[cycle + 1] = ensemble_accuracy_norotation
+        
+        train_losses[cycle,:,:] = a
+        test_losses[cycle,:,:] = b
+        test_accuracies[cycle,:,:] = c
+        ensemble_losses[cycle,:] = d
+        ensemble_accuracies[cycle,:] = e
+        
+        
+
+        np.savez_compressed('../continuous_training_data/' + name + '_accloss',
+                            models_train_losses=train_losses,
+                            models_test_losses=test_losses,
+                            models_test_accuracies=test_accuracies, 
+                            ensemble_losses=ensemble_losses,
+                            ensemble_accuracies=ensemble_accuracies,
+                            ensemble_accuracies_norotation=ensemble_accuracies_norotation
+                           )
+
+
+def cycle_increasing_augmentation_notraining(ensemble, test_ds, target_rotation=360, batch_size=1, cycles=4, name="%"):
     """Alternately going through new data and then training on the collected datapoints.
     Inbetween the collected data is saved to later be plotted."""
     
