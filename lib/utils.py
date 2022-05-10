@@ -149,7 +149,7 @@ def plot_cycles(ensemble, cycle_name):
              xticks=range(mta.shape[0]))
     
 
-def plot_cycles_oneline(ensemble, cycle_name, only_some=[]):
+def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=True):
     filepaths = get_file_names("../continuous_training_data/" + cycle_name)
     if only_some:
         filepaths = [filepaths[i] for i in only_some]
@@ -438,7 +438,7 @@ def plot_frozen_model(name):
              ylabel="Test accuracy",
              ax=ax[1])
 
-def plot_multiple_ensemble_accuracies(cycle_names, which="Jump"):
+def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
     fig, ax = plt.subplots()
     # Plot description
     ax.grid()
@@ -493,4 +493,5 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump"):
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
                   title="Run configurations")
-        
+    if xlim is not None:
+        ax.set_xlim(left=0, right=xlim)
