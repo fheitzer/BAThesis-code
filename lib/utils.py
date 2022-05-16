@@ -2,11 +2,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import os
 from os import listdir
 from os.path import isfile, join
 import glob
 from IPython.display import clear_output
 import matplotlib as mpl
+import datetime
+from PIL import Image
+
 mpl.rcParams['text.usetex'] = False
 
 
@@ -37,7 +41,7 @@ def plot_ensemble_predicition_examples(ensemble, test_dataset):
         print(f"Ensemble: {getmax(ensemble(x)[0])}")
 
         
-def plot_collected_data(ensemble):
+def plot_collected_data(ensemble, save=True):
     
     if ensemble.continuous_training_data is None:
         return
@@ -67,7 +71,8 @@ def plot_collected_data(ensemble):
     dx = (np.arange(df_all.shape[1])-df_all.shape[1]/2.)/(df_all.shape[1]+2.)
     d = 1./(df_all.shape[1]+2.)
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(16,8))
+    plt.grid(True, zorder=-1.0)
     for i in range(df_all.shape[1]):
         ax.bar(x+dx[i], df_all[:,i], width=d, label="_Hidden", color='black')
         ax.bar(x+dx[i], df_pos[:,i], width=d, label="{}".format(i))
@@ -75,6 +80,7 @@ def plot_collected_data(ensemble):
     models = ["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"]
     ax.set_xticks(range(5))
     ax.set_xticklabels(models)
+    ax.set_axisbelow(True)
     #plt.xlabel("Model")
     
     plt.title(f"Amount of the collected data ({len(ensemble.continuous_training_data)}) per model and class.")
@@ -85,8 +91,11 @@ def plot_collected_data(ensemble):
         
     print(subtitle)
     plt.legend(title="Class", loc='center left', bbox_to_anchor=(1, 0.5), framealpha=1)
+    
     plt.show()
-        
+    if save:
+        name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+        #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight')
 
 def run_data(ensemble, data=None, generator=None, datapoints=10000, save=False):
     if not save:
@@ -113,7 +122,7 @@ def plot_cycles(ensemble, cycle_name):
     for i, idx in enumerate(range(0, len(filepaths)-1, 2)):
         print("Cycle: ", i)
         ensemble.load_data(filepaths[idx:idx+2])
-        plot_collected_data(ensemble)
+        plot_collected_data(ensemble, save=False)
     
     accloss = np.load('../continuous_training_data/'+cycle_name+'_accloss.npz')
     
@@ -149,7 +158,7 @@ def plot_cycles(ensemble, cycle_name):
              xticks=range(mta.shape[0]))
     
 
-def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=True):
+def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=True, save=True):
     filepaths = get_file_names("../continuous_training_data/" + cycle_name)
     if only_some:
         filepaths = [filepaths[i] for i in only_some]
@@ -157,8 +166,8 @@ def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=
         print("Cycle: ", i)
         ensemble.load_data(filepaths[idx:idx+2])
         #clear_output(wait=True)
-        plot_collected_data(ensemble)
-    
+        plot_collected_data(ensemble, save=save)
+        
     #plot_cycle_accuracies(cycle_name, increasing_rotation)
 
         
@@ -216,6 +225,10 @@ def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
                       xlabel="Cycle",
                       ylabel="Test accuracy",
                       ax=ax[2])
+    
+    plt.show()
+    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
         
 
 def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
@@ -302,6 +315,8 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
                    loc='center left',
                    bbox_to_anchor=(1.04,0.5))
     plt.show()
+    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
 
 
 def fix_numeration_in_dir(name):
@@ -359,6 +374,10 @@ def classification_specialization(ensemble, cycle_name):
             xlabel="Cycle",
             ylabel="Index",
             figsize=(12,12))
+    plt.grid(True)
+    plt.show()
+    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
     
     
 def get_specialization_index_mean(ensemble):
@@ -377,7 +396,7 @@ def classification_specialization_mean(ensemble, cycle_name, legend=["1"]):
     if type(cycle_name) is not list:
         cycle_name = [cycle_name]
     
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(16,8))
     for cycle in cycle_name:
         filepaths = get_file_names("../continuous_training_data/"+cycle)
         cycles = int(len(filepaths)/2)
@@ -397,12 +416,16 @@ def classification_specialization_mean(ensemble, cycle_name, legend=["1"]):
               loc='center left',
               bbox_to_anchor=(1.04,0.5),
               title="Cycles per Rotation")
+    plt.grid(True)
+    plt.show()
+    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
     
     
 def plot_frozen_model(name):
     accloss = np.load('../continuous_training_data/' + name + '_accloss.npz')
 
-    fig, ax = plt.subplots(2, figsize=(8,12))
+    fig, ax = plt.subplots(1, 2, figsize=(18,9))
     
     ensemble_acc = accloss['ensemble_accuracies']
     for i, row in enumerate(np.flip(ensemble_acc, 0)):
@@ -419,8 +442,9 @@ def plot_frozen_model(name):
     ensemble_acc.plot(title="Frozen Ensemble accuracy on increasingly augmented data", 
                       xlabel="Rotation in degrees", 
                       ylabel="Test accuracy",
-                      ax=ax[0])
-    
+                      ax=ax[0],
+                      grid=True)
+
     mta = accloss['models_test_accuracies'][:,:]
     border = 0
     for i, row in enumerate(np.flip(mta, 0)):
@@ -436,10 +460,15 @@ def plot_frozen_model(name):
     mta.plot(title="Frozen Model accuracy on increasingly augmented data",
              xlabel="Rotation in degrees",
              ylabel="Test accuracy",
-             ax=ax[1])
+             ax=ax[1],
+             grid=True)
+
+    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
+    plt.show()
 
 def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(16,10))
     # Plot description
     ax.grid()
     
@@ -466,14 +495,14 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
     ax.set_ylabel("Test Accuracy")
     
     if which == "Increment":
-        fig.suptitle("Ensemble accuracies on rotating data\n with individual amounts of cycles per rotation")
+        fig.suptitle("Ensemble accuracies on increasingly rotated data\n with individual amounts of cycles per rotation")
         ax.legend(["1/5","1/3","1/2","1","2","3","5"], 
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
                   title="Cycles per Rotation")
         
     if which == "Jump":
-        fig.suptitle("Frozen model on data with different amounts of rotation")
+        fig.suptitle("Continuous training on data that jumps to a rotation")
         ax.legend(["5","10","20","25"], 
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
@@ -493,5 +522,24 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
                   title="Run configurations")
+        
+    if which == "threshold":
+        fig.suptitle("Trying out a threshold of 90% for continuous training")
+    
     if xlim is not None:
         ax.set_xlim(left=0, right=xlim)
+        
+    plt.show()
+    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
+
+
+def graphs_to_pdf(name="graph_präse"):
+    images = glob.glob("../graphs/*.jpg")
+    imlist = []
+    for img in images:
+        im = Image.open(img)
+        im = im.convert('RGB')
+        imlist.append(im)
+    imlist[0].save('../graphs/' + name + '.pdf',save_all=True, append_images=imlist[1:])
+    map(os.remove(img),[img for img in images])

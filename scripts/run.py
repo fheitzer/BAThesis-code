@@ -25,7 +25,7 @@ if __name__ == '__main__':
                         help='Amount of data to look at before cycle', required=True)
     
     args = parser.parse_args()
-    print(args)
+
     train_ds_pre, train_ds_post, test_ds, train_generator, test_generator = data.load_data(rotation=args.rotation)
 
     num_classes = 10

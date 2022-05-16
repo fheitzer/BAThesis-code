@@ -141,7 +141,6 @@ class NN(tf.keras.Model):
         self.model.append(Dense(num_classes, activation=tf.keras.activations.softmax))
 
     def call(self, x):
-        
         x = tf.reshape(x, (x.shape[0], 784))
         
         for layer in self.model:
