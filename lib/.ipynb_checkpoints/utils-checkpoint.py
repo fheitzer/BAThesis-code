@@ -11,7 +11,11 @@ import matplotlib as mpl
 import datetime
 from PIL import Image
 
-mpl.rcParams['text.usetex'] = False
+mpl.rcParams['text.usetex'] = True
+plt.rcParams['font.family'] = 'Latin Roman 10'
+plt.rcParams['font.size'] = '12'
+MODELS = ["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"]
+
 
 
 def plot(x):
@@ -77,9 +81,8 @@ def plot_collected_data(ensemble, save=True):
         ax.bar(x+dx[i], df_all[:,i], width=d, label="_Hidden", color='black')
         ax.bar(x+dx[i], df_pos[:,i], width=d, label="{}".format(i))
         
-    models = ["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"]
     ax.set_xticks(range(5))
-    ax.set_xticklabels(models)
+    ax.set_xticklabels(MODELS)
     ax.set_axisbelow(True)
     #plt.xlabel("Model")
     
@@ -95,7 +98,7 @@ def plot_collected_data(ensemble, save=True):
     plt.show()
     if save:
         name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-        #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight')
+        #plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
 
 def run_data(ensemble, data=None, generator=None, datapoints=10000, save=False):
     if not save:
@@ -228,7 +231,7 @@ def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
     
     plt.show()
     name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
+    #plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
         
 
 def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
@@ -316,7 +319,7 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
                    bbox_to_anchor=(1.04,0.5))
     plt.show()
     name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
+    #plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
 
 
 def fix_numeration_in_dir(name):
@@ -377,7 +380,7 @@ def classification_specialization(ensemble, cycle_name):
     plt.grid(True)
     plt.show()
     name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
+    #plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
     
     
 def get_specialization_index_mean(ensemble):
@@ -419,13 +422,41 @@ def classification_specialization_mean(ensemble, cycle_name, legend=["1"]):
     plt.grid(True)
     plt.show()
     name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
+    #plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
+
+def classification_specialization_mean_withoutfirst(ensemble, cycle_name, legend=["1"]):
+    if type(cycle_name) is not list:
+        cycle_name = [cycle_name]
+    
+    fig, ax = plt.subplots(figsize=(16,8))
+    for cycle in cycle_name:
+        filepaths = get_file_names("../continuous_training_data/"+cycle)
+        cycles = int(len(filepaths)/2)
+        index = np.zeros((cycles))
+        for i, idx in enumerate(range(2, len(filepaths)-3, 2)):
+            ensemble.load_data(filepaths[idx:idx+2])
+            index[i] = get_specialization_index_mean(ensemble)
+
+        df = pd.DataFrame(index)
+        df.plot(title="Classification specialization index",
+                xlabel="Cycle",
+                ylabel="Index",
+                ax=ax)
+        
+    fig.suptitle("Index for class-specialization")
+    ax.legend(legend, 
+              loc='center left',
+              bbox_to_anchor=(1.04,0.5),
+              title="Cycles per Rotation")
+    plt.grid(True)
+    plt.show()
+    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
     
     
 def plot_frozen_model(name):
     accloss = np.load('../continuous_training_data/' + name + '_accloss.npz')
 
-    fig, ax = plt.subplots(1, 2, figsize=(18,9))
+    fig, ax = plt.subplots(1, 2, figsize=(10,5))
     
     ensemble_acc = accloss['ensemble_accuracies']
     for i, row in enumerate(np.flip(ensemble_acc, 0)):
@@ -439,11 +470,12 @@ def plot_frozen_model(name):
     ensemble_acc = pd.DataFrame(ensemble_acc)
     #ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
     
-    ensemble_acc.plot(title="Frozen Ensemble accuracy on increasingly augmented data", 
+    ensemble_acc.plot(title="Frozen Ensemble accuracy\n on increasingly augmented data", 
                       xlabel="Rotation in degrees", 
                       ylabel="Test accuracy",
                       ax=ax[0],
-                      grid=True)
+                      grid=True,
+                      legend=False)
 
     mta = accloss['models_test_accuracies'][:,:]
     border = 0
@@ -457,18 +489,20 @@ def plot_frozen_model(name):
                 
     mta = pd.DataFrame(mta)
     
-    mta.plot(title="Frozen Model accuracy on increasingly augmented data",
+    mta.plot(title="Frozen Model accuracy\n on increasingly augmented data",
              xlabel="Rotation in degrees",
              ylabel="Test accuracy",
              ax=ax[1],
              grid=True)
+    ax[1].legend(labels=MODELS, title="Model")
+    
 
     name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
-    plt.show()
+    plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
+    #plt.show()
 
 def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
-    fig, ax = plt.subplots(figsize=(16,10))
+    fig, ax = plt.subplots(figsize=(10,5))
     # Plot description
     ax.grid()
     
@@ -502,36 +536,38 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
                   title="Cycles per Rotation")
         
     if which == "Jump":
-        fig.suptitle("Continuous training on data that jumps to a rotation")
+        fig.suptitle("Continuous training\n on data that jumps to a rotation")
         ax.legend(["5","10","20","25"], 
-                  loc='center left',
-                  bbox_to_anchor=(1.04,0.5),
+                  loc='lower right',
+                  #bbox_to_anchor=(1.04,0.5),
                   title="Rotation")
         
     if which == "5cr_comparison":
-        fig.suptitle("5 cycles per rotation runs with different amounts of data per cycle")
+        fig.suptitle("5 cycles per rotation runs\n with different amounts of data per cycle")
         ax.legend(["5,000", "10,000", "15,000"], 
-                  loc='center left',
-                  bbox_to_anchor=(1.04,0.5),
+                  loc='lower right',
+                  #bbox_to_anchor=(1.04,0.5),
                   title="Data per cycle")
+    
         
     if which == "1cr15k_5cr3k":
-        fig.suptitle("One run has 5 times more cycles per rotation, the other has 5 times more data per cycle ")
-        ax.legend([r"1 $\dfrac{\mathrm{Cycle}}{\mathrm{Rotation}}$ & 15,000 datapoints per cycle",
-                   r"5 $\dfrac{\mathrm{Cycles}}{\mathrm{Rotation}}$ & 3,000 datapoints per cycle"], 
+        fig.suptitle("One run has 5 times more cycles per rotation,\n the other has 5 times more data per cycle ")
+        ax.legend([r"1 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$ \& 15,000 datapoints per cycle",
+                   r"5 $\frac{\mathrm{Cycles}}{\mathrm{Rotation}}$ \& 3,000 datapoints per cycle"], 
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
                   title="Run configurations")
         
     if which == "threshold":
-        fig.suptitle("Trying out a threshold of 90% for continuous training")
+        fig.suptitle(r"Test run of a 90\% accuracy threshold experiment with 10,000 datapoints per cycle")
     
     if xlim is not None:
         ax.set_xlim(left=0, right=xlim)
         
-    plt.show()
     name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    #plt.savefig('../graphs/' + name + '.jpg', bbox_inches='tight', dpi=900)
+    plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
+
+    plt.show()
 
 
 def graphs_to_pdf(name="graph_präse"):

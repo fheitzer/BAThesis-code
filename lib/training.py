@@ -210,7 +210,11 @@ def cycle(ensemble, test_ds, train_generator, test_generator, epochs=1, batch_si
         print(f"LOSS {test_loss} ::: ACC {test_accuracy}")
         test_losses[0,idx,:] = test_loss
         test_accuracies[0,idx,:] = test_accuracy
-    
+        
+    # Collect data to then discard it to fix first run
+    print("Collect data to fix first run")
+    lib.utils.run_data(ensemble, generator=train_generator, datapoints=data_per_cycle)
+    ensemble.reset_data()
     
     for cycle in range(cycles):
         # Collect data to train on
