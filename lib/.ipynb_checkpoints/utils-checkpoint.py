@@ -161,7 +161,7 @@ def plot_cycles(ensemble, cycle_name):
              xticks=range(mta.shape[0]))
     
 
-def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=True, save=True):
+def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=True, save=True, withaccs=False):
     filepaths = get_file_names("../continuous_training_data/" + cycle_name)
     if only_some:
         filepaths = [filepaths[i] for i in only_some]
@@ -171,7 +171,8 @@ def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=
         #clear_output(wait=True)
         plot_collected_data(ensemble, save=save)
         
-    #plot_cycle_accuracies(cycle_name, increasing_rotation)
+    if withaccs:
+        plot_cycle_accuracies(cycle_name, increasing_rotation)
 
         
 def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
@@ -234,9 +235,16 @@ def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
     #plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
         
 
-def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
+def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
     n_rows = 2
     n_columns = len(cycle_names)
+    starting_acc_norotation = 0.94017009
+    starting_model_accs = [0.9567840189873418,
+                           0.9553995253164557, 
+                           0.9574762658227848,
+                           0.9657832278481012,
+                           0.9635087025316456]
+
     if increasing_rotation:
         n_rows = 3
     fig, ax = plt.subplots(n_rows,
@@ -262,17 +270,22 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
         accloss = np.load('../continuous_training_data/' + cycle_name + '_accloss.npz')
         # Split the data
         ensemble_acc = accloss['ensemble_accuracies']
-        # Cut off zero rows
+        # Cut off zero-rows
         for i, row in enumerate(np.flip(ensemble_acc, 0)):
             if np.max(row) != 0:
                 if i == 0:
                     break
                 ensemble_acc = ensemble_acc[:-i]
                 break
+        ensemble_acc = ensemble_acc[:,-1]
+        ensemble_acc = np.insert(ensemble_acc, 0, starting_acc_norotation)
+        #ensemble_acc = np.repeat(ensemble_acc, 5)
+        
         # Plot
-        ensemble_acc = ensemble_acc.flatten()
+        #ensemble_acc = ensemble_acc.flatten()
         ensemble_acc = pd.DataFrame(ensemble_acc)
-        ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
+        #ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
+        ensemble_acc['x'] = np.arange(0,len(ensemble_acc))
         ax[0,idx].plot(ensemble_acc['x'], ensemble_acc[0])
         #ax[0,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
         
@@ -287,6 +300,7 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
                 mta = mta[:-i]
                 border = i
                 break
+        mta = np.insert(mta, 0, starting_model_accs, axis=0)
         # Plot
         mta = pd.DataFrame(mta)
         ax[1,idx].plot(mta)
@@ -317,9 +331,10 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True):
     ax[1,2].legend(["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"], 
                    loc='center left',
                    bbox_to_anchor=(1.04,0.5))
+    plt.setp(ax, xlim=(0,x_lim))
     plt.show()
-    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    #plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
+    name = "res_grid_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
 
 
 def fix_numeration_in_dir(name):
@@ -421,8 +436,8 @@ def classification_specialization_mean(ensemble, cycle_name, legend=["1"]):
               title="Cycles per Rotation")
     plt.grid(True)
     plt.show()
-    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    #plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
+    name = "res_special_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
 
 def classification_specialization_mean_withoutfirst(ensemble, cycle_name, legend=["1"]):
     if type(cycle_name) is not list:
@@ -497,11 +512,11 @@ def plot_frozen_model(name):
     ax[1].legend(labels=MODELS, title="Model")
     
 
-    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    name = "res_frozen_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
     plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
     #plt.show()
 
-def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
+def plot_multiple_model_accuracies(cycle_names, which="Jump", xlim=None):
     fig, ax = plt.subplots(figsize=(10,5))
     # Plot description
     ax.grid()
@@ -564,18 +579,127 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
     if xlim is not None:
         ax.set_xlim(left=0, right=xlim)
         
-    name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    name = "res_" + which + "_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
     plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
 
     plt.show()
 
+    
+def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
+    if which == "Jump":
+        plot_jump_ensemble_accuracies(cycle_names=cycle_names, xlim=xlim)
+        return
+    
+    fig, ax = plt.subplots(figsize=(10,5))
+    # Plot description
+    ax.grid()
+    starting_acc_norotation = 0.94017009
+    
+    # Plot the data
+    for idx, cycle_name in enumerate(cycle_names):
+        # Get the data
+        accloss = np.load('../continuous_training_data/' + cycle_name + '_accloss.npz')
+        # Split the data
+        ensemble_acc = accloss['ensemble_accuracies']
+        # Cut off zero rows
+        for i, row in enumerate(np.flip(ensemble_acc, 0)):
+            if np.max(row) != 0:
+                if i == 0:
+                    break
+                ensemble_acc = ensemble_acc[:-i]
+                break
+        ensemble_acc = ensemble_acc[:,-1]
+        ensemble_acc = np.insert(ensemble_acc, 0, starting_acc_norotation)
+        # Plot
+        ensemble_acc = ensemble_acc.flatten()
+        ensemble_acc = pd.DataFrame(ensemble_acc)
+        #ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
+        ensemble_acc['x'] = np.arange(len(ensemble_acc))
+        ax.plot(ensemble_acc['x'], ensemble_acc[0])
+    
+        
+    ax.set_xlabel("Cycle")
+    ax.set_ylabel("Test Accuracy")
+    
+    if which == "Increment":
+        fig.suptitle("Ensemble accuracies on increasingly rotated data\n with individual amounts of cycles per rotation")
+        ax.legend(["1/5","1/3","1/2","1","2","3","5"], 
+                  loc='center left',
+                  bbox_to_anchor=(1.04,0.5),
+                  title="Cycles per Rotation")
+        
+    if which == "5cr_comparison":
+        fig.suptitle("5 cycles per rotation runs\n with different amounts of data per cycle")
+        ax.legend(["5,000", "10,000", "15,000"], 
+                  loc='lower right',
+                  #bbox_to_anchor=(1.04,0.5),
+                  title="Data per cycle")
+    
+        
+    if which == "1cr15k_5cr3k":
+        fig.suptitle("One run has 5 times more cycles per rotation,\n the other has 5 times more data per cycle ")
+        ax.legend([r"1 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$ \& 15,000 datapoints per cycle",
+                   r"5 $\frac{\mathrm{Cycles}}{\mathrm{Rotation}}$ \& 3,000 datapoints per cycle"], 
+                  loc='center left',
+                  bbox_to_anchor=(1.04,0.5),
+                  title="Run configurations")
+        
+    if which == "threshold":
+        fig.suptitle(r"Test run of a 90\% accuracy threshold experiment with 10,000 datapoints per cycle")
+    
+    if xlim is not None:
+        ax.set_xlim(left=0, right=xlim)
+        
+    name = "res_" + which + "_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
 
-def graphs_to_pdf(name="graph_präse"):
-    images = glob.glob("../graphs/*.jpg")
-    imlist = []
-    for img in images:
-        im = Image.open(img)
-        im = im.convert('RGB')
-        imlist.append(im)
-    imlist[0].save('../graphs/' + name + '.pdf',save_all=True, append_images=imlist[1:])
-    map(os.remove(img),[img for img in images])
+    plt.show()    
+    
+    
+def plot_jump_ensemble_accuracies(cycle_names, xlim=None):
+    fig, ax = plt.subplots(figsize=(10,5))
+    # Plot description
+    ax.grid()
+    jump_starting_accs = [0.9507049295070493,
+                      0.943005699430057,
+                      0.9074092590740926,
+                      0.8785121487851215]
+    # Plot the data
+    for idx, cycle_name in enumerate(cycle_names):
+        # Get the data
+        accloss = np.load('../continuous_training_data/' + cycle_name + '_accloss.npz')
+        # Split the data
+        ensemble_acc = accloss['ensemble_accuracies']
+        # Cut off zero rows
+        for i, row in enumerate(np.flip(ensemble_acc, 0)):
+            if np.max(row) != 0:
+                if i == 0:
+                    break
+                ensemble_acc = ensemble_acc[:-i]
+                break
+        ensemble_acc = ensemble_acc[:,-1]
+        ensemble_acc = np.insert(ensemble_acc, 0, jump_starting_accs[idx])
+        # Plot
+        ensemble_acc = ensemble_acc.flatten()
+        ensemble_acc = pd.DataFrame(ensemble_acc)
+        ensemble_acc['x'] = np.arange(len(ensemble_acc))
+        ax.plot(ensemble_acc['x'], ensemble_acc[0])
+        
+    ax.set_xlabel("Cycle")
+    ax.set_ylabel("Test Accuracy")
+
+        
+    fig.suptitle("Continuous training\n on data that jumps to a rotation")
+    ax.legend(["5","10","20","25"], 
+              loc='lower right',
+              #bbox_to_anchor=(1.04,0.5),
+              title="Rotation")
+
+    if xlim is not None:
+        ax.set_xlim(left=0, right=xlim)
+        
+    name = "res_jump_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
+
+    plt.show()    
+    
