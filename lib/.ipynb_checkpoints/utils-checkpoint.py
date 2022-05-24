@@ -332,9 +332,10 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
                    loc='center left',
                    bbox_to_anchor=(1.04,0.5))
     plt.setp(ax, xlim=(0,x_lim))
-    plt.show()
     name = "res_grid_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
     plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
+    plt.show()
+
 
 
 def fix_numeration_in_dir(name):
