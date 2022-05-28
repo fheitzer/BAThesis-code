@@ -613,10 +613,17 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
         ensemble_acc = np.insert(ensemble_acc, 0, starting_acc_norotation)
         # Plot
         ensemble_acc = ensemble_acc.flatten()
-        ensemble_acc = pd.DataFrame(ensemble_acc)
-        #ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
-        ensemble_acc['x'] = np.arange(len(ensemble_acc))
-        ax.plot(ensemble_acc['x'], ensemble_acc[0])
+        # repeat values 5 times for first plot
+        if which == "1cr15k_5cr3k" and idx == 0:
+            ensemble_acc = np.repeat(ensemble_acc, 5)[4:]
+            ensemble_acc = pd.DataFrame(ensemble_acc)
+            ensemble_acc['x'] = np.arange(len(ensemble_acc))
+            ax.plot(ensemble_acc['x'], ensemble_acc[0])
+        else:
+            ensemble_acc = pd.DataFrame(ensemble_acc)
+            #ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
+            ensemble_acc['x'] = np.arange(len(ensemble_acc))
+            ax.plot(ensemble_acc['x'], ensemble_acc[0])
     
         
     ax.set_xlabel("Cycle")
@@ -644,6 +651,8 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
                   title="Run configurations")
+        ax.set_xlabel("Rotation in degrees")
+        ax.set_xticklabels(np.arange(0,7,1))
         
     if which == "threshold":
         fig.suptitle(r"Test run of a 90\% accuracy threshold experiment with 10,000 datapoints per cycle")
