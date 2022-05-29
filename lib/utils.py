@@ -94,11 +94,11 @@ def plot_collected_data(ensemble, save=True):
         
     print(subtitle)
     plt.legend(title="Class", loc='center left', bbox_to_anchor=(1, 0.5), framealpha=1)
+    if save:
+        name = "res_collection_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+        plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
     
     plt.show()
-    if save:
-        name = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-        #plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
 
 def run_data(ensemble, data=None, generator=None, datapoints=10000, save=False):
     if not save:
