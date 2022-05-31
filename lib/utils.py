@@ -13,7 +13,7 @@ from PIL import Image
 
 mpl.rcParams['text.usetex'] = True
 plt.rcParams['font.family'] = 'Latin Roman 10'
-plt.rcParams['font.size'] = '12'
+plt.rcParams['font.size'] = '16'
 MODELS = ["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"]
 
 
@@ -75,7 +75,7 @@ def plot_collected_data(ensemble, save=True):
     dx = (np.arange(df_all.shape[1])-df_all.shape[1]/2.)/(df_all.shape[1]+2.)
     d = 1./(df_all.shape[1]+2.)
 
-    fig, ax = plt.subplots(figsize=(16,8))
+    fig, ax = plt.subplots(figsize=(8,5))
     plt.grid(True, zorder=-1.0)
     for i in range(df_all.shape[1]):
         ax.bar(x+dx[i], df_all[:,i], width=d, label="_Hidden", color='black')
@@ -86,7 +86,7 @@ def plot_collected_data(ensemble, save=True):
     ax.set_axisbelow(True)
     #plt.xlabel("Model")
     
-    plt.title(f"Amount of the collected data ({len(ensemble.continuous_training_data)}) per model and class.")
+    plt.title(f"Amount of the Collected Data ({len(ensemble.continuous_training_data)}) per Model And Class.\n{len(ensemble.missed_data)} Data points Were Not Classified.")
     
     subtitle = f"{np.nansum(df_pos)} collected datapoints labeled correct\n{np.sum(df_all)-np.sum(df_pos)} collected datapoints were labeled wrong\n"
     if ensemble.missed_data is not None:
@@ -253,14 +253,21 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
                            sharey=True, 
                            sharex=True)
     # Plot description
-    fig.suptitle("Each column shows a separate simulation with 1, 2, and 5 cycles per rotation as indicated by the background grid", 
-                 fontsize=20)
-    ax[0,1].set_title("Ensemble Accuracy\n on augmented data", 
-                      fontsize=18)
-    ax[1,1].set_title("Model accuracy\n on augmented data", 
-                      fontsize=18)
-    ax[2,1].set_title("Ensemble accuracy\n on frozen data", 
-                      fontsize=18)
+    ax[0,1].set_title("Ensemble Accuracy\n Under Dataset Shift", 
+                      fontsize=20)
+    ax[0,0].set_title(r"1 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
+                      fontsize=18,
+                      loc='right')
+    ax[0,1].set_title(r"2 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
+                      fontsize=18,
+                      loc='right')
+    ax[0,2].set_title(r"5 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
+                      fontsize=18,
+                      loc='right')
+    ax[1,1].set_title("Model Accuracy\n Under Dataset Shift", 
+                      fontsize=20)
+    ax[2,1].set_title("Ensemble Accuracy\n on Original Test Dataset", 
+                      fontsize=20)
     plt.subplots_adjust(wspace=0.1, hspace=0.3)
     fig.text(0.5, 0.04, 'Cycle', ha='center', fontsize=18)
     fig.text(0.04, 0.5, 'Test Accuracy', va='center', rotation='vertical', fontsize=18)
@@ -330,7 +337,8 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
             
     ax[1,2].legend(["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"], 
                    loc='center left',
-                   bbox_to_anchor=(1.04,0.5))
+                   bbox_to_anchor=(1.04,0.5),
+                   fontsize=18)
     plt.setp(ax, xlim=(0,x_lim))
     name = "res_grid_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
     plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
@@ -486,9 +494,9 @@ def plot_frozen_model(name):
     ensemble_acc = pd.DataFrame(ensemble_acc)
     #ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
     
-    ensemble_acc.plot(title="Frozen Ensemble accuracy\n on increasingly augmented data", 
-                      xlabel="Rotation in degrees", 
-                      ylabel="Test accuracy",
+    ensemble_acc.plot(title="Frozen Ensemble Accuracy\n Under Increasing Dataset Shift", 
+                      xlabel="Rotation in Degrees", 
+                      ylabel="Test Accuracy",
                       ax=ax[0],
                       grid=True,
                       legend=False)
@@ -505,12 +513,15 @@ def plot_frozen_model(name):
                 
     mta = pd.DataFrame(mta)
     
-    mta.plot(title="Frozen Model accuracy\n on increasingly augmented data",
-             xlabel="Rotation in degrees",
-             ylabel="Test accuracy",
+    mta.plot(title="Frozen Model Accuracy\n Under Increasing Dataset Shift",
+             xlabel="Rotation in Degrees",
+             ylabel="Test Accuracy",
              ax=ax[1],
              grid=True)
-    ax[1].legend(labels=MODELS, title="Model")
+    ax[1].legend(labels=MODELS,
+                 title="Model", 
+                 loc='center left',
+                 bbox_to_anchor=(1.04,0.5))
     
 
     name = "res_frozen_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
@@ -545,14 +556,14 @@ def plot_multiple_model_accuracies(cycle_names, which="Jump", xlim=None):
     ax.set_ylabel("Test Accuracy")
     
     if which == "Increment":
-        fig.suptitle("Ensemble accuracies on increasingly rotated data\n with individual amounts of cycles per rotation")
+        fig.suptitle("Continuous ensemble training on increasingly rotated data\n with individual amounts of cycles per rotation")
         ax.legend(["1/5","1/3","1/2","1","2","3","5"], 
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
                   title="Cycles per Rotation")
         
     if which == "Jump":
-        fig.suptitle("Continuous training\n on data that jumps to a rotation")
+        fig.suptitle("Continuous ensemble training\n under sudden dataset shifts")
         ax.legend(["5","10","20","25"], 
                   loc='lower right',
                   #bbox_to_anchor=(1.04,0.5),
@@ -563,7 +574,7 @@ def plot_multiple_model_accuracies(cycle_names, which="Jump", xlim=None):
         ax.legend(["5,000", "10,000", "15,000"], 
                   loc='lower right',
                   #bbox_to_anchor=(1.04,0.5),
-                  title="Data per cycle")
+                  title="Data per Cycle")
     
         
     if which == "1cr15k_5cr3k":
@@ -572,7 +583,7 @@ def plot_multiple_model_accuracies(cycle_names, which="Jump", xlim=None):
                    r"5 $\frac{\mathrm{Cycles}}{\mathrm{Rotation}}$ \& 3,000 datapoints per cycle"], 
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
-                  title="Run configurations")
+                  title="Run Configurations")
         
     if which == "threshold":
         fig.suptitle(r"Test run of a 90\% accuracy threshold experiment with 10,000 datapoints per cycle")
@@ -630,32 +641,46 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
     ax.set_ylabel("Test Accuracy")
     
     if which == "Increment":
-        fig.suptitle("Ensemble accuracies on increasingly rotated data\n with individual amounts of cycles per rotation")
+        fig.suptitle("Continuous Ensemble Training Under Dataset Shifts\n Increasing at Different Speeds")
         ax.legend(["1/5","1/3","1/2","1","2","3","5"], 
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
                   title="Cycles per Rotation")
+        lines = plt.gca().get_lines()
+        include = [0,1,2]
+        legend1 = plt.legend([lines[i] for i in include],
+                             ["5", "3", "2"],
+                             title="Rotations per Cycle",
+                             loc='upper left',
+                             bbox_to_anchor=(1.04,0.5))
+        legend2 = plt.legend([lines[i] for i in [3,4,5,6]],
+                             ['1','2','3','5'],
+                             title="Cycles per Rotation",
+                             loc='lower left',
+                             bbox_to_anchor=(1.04,0.5))
+        plt.gca().add_artist(legend1)
         
     if which == "5cr_comparison":
-        fig.suptitle("5 cycles per rotation runs\n with different amounts of data per cycle")
+        fig.suptitle(r"Continuous Ensemble Training at 5 $\frac{\mathrm{Cycles}}{\mathrm{Rotation}}$\\With Different Amounts of Data per Cycle",
+                    y=1)
         ax.legend(["5,000", "10,000", "15,000"], 
                   loc='lower right',
                   #bbox_to_anchor=(1.04,0.5),
-                  title="Data per cycle")
+                  title="Data per Cycle")
     
         
     if which == "1cr15k_5cr3k":
-        fig.suptitle("One run has 5 times more cycles per rotation,\n the other has 5 times more data per cycle ")
-        ax.legend([r"1 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$ \& 15,000 datapoints per cycle",
-                   r"5 $\frac{\mathrm{Cycles}}{\mathrm{Rotation}}$ \& 3,000 datapoints per cycle"], 
+        fig.suptitle("During One Rotation 2 CET-Ensembles Look at 15k Data Points per Rotation.\nOne Ensemble Takes 1 Cycle, The Other Takes 5 Cycles.")
+        ax.legend([r"1 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$\& 15k Data Points per cycle",
+                   r"5 $\frac{\mathrm{Cycles}}{\mathrm{Rotation}}$\& 3k Data Points per cycle"], 
                   loc='center left',
                   bbox_to_anchor=(1.04,0.5),
-                  title="Run configurations")
-        ax.set_xlabel("Rotation in degrees")
+                  title="Run Configurations")
+        ax.set_xlabel("Rotation in Degrees")
         ax.set_xticklabels(np.arange(0,7,1))
         
     if which == "threshold":
-        fig.suptitle(r"Test run of a 90\% accuracy threshold experiment with 10,000 datapoints per cycle")
+        fig.suptitle(r"Continuous Ensemble Training With a 90\% Threshold For The Cycle Timing")
     
     if xlim is not None:
         ax.set_xlim(left=0, right=xlim)
@@ -699,11 +724,11 @@ def plot_jump_ensemble_accuracies(cycle_names, xlim=None):
     ax.set_ylabel("Test Accuracy")
 
         
-    fig.suptitle("Continuous training\n on data that jumps to a rotation")
-    ax.legend(["5","10","20","25"], 
+    fig.suptitle("Continuous Ensemble Training\n Under Sudden Dataset Shifts")
+    ax.legend(["$5^\circ$","$10^\circ$","$20^\circ$","$25^\circ$"], 
               loc='lower right',
               #bbox_to_anchor=(1.04,0.5),
-              title="Rotation")
+              title="Rotation Range")
 
     if xlim is not None:
         ax.set_xlim(left=0, right=xlim)
