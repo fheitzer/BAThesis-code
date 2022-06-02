@@ -8,22 +8,28 @@ from datetime import datetime
 def train_step(model, img, target, loss_function, optimizer):
     # loss_object and optimizer_object are instances of respective tensorflow classes
     with tf.GradientTape() as tape:
+        # Get predictions
         prediction = model(img)
+        # Get loss
         loss = loss_function(target, prediction)
+        # Compute gradients
         gradients = tape.gradient(loss, model.trainable_variables)
+    # Perform gradient descent
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     return loss
 
 
 def test(model, test_data, loss_function, datapoints=10000):
     # test over complete test data
-
     test_accuracy_aggregator = []
     test_loss_aggregator = []
 
     for idx, (img, target) in enumerate(test_data):
+        # Get predictions
         prediction = model(img)
+        # Get loss
         sample_test_loss = loss_function(target, prediction)
+        # Compute accuracy
         sample_test_accuracy = np.argmax(target, axis=1) == np.argmax(prediction, axis=1)
         sample_test_accuracy = np.mean(sample_test_accuracy)
         test_loss_aggregator.append(sample_test_loss.numpy())
@@ -41,7 +47,7 @@ def test(model, test_data, loss_function, datapoints=10000):
 
 
 def test_classes(model, test_data, loss_function):
-    ### Doesnt work with generator yet
+    ### Doesnt work with generator
     accs = []
     for idx in range(model.num_classes):
         test_data_filtered = test_data.unbatch().filter(lambda x, y: tf.reduce_all(tf.not_equal(tf.argmax(y), idx))).batch(512)
@@ -81,6 +87,7 @@ def test_ensemble(ensemble, test_data, loss_function):
 
 
 def pretraining(model, train_dataset, test_dataset, epochs=10):
+    """Training loop for the models before they are in an ensemble"""
     tf.keras.backend.clear_session()
 
     # Hyperparameters
@@ -128,6 +135,7 @@ def pretraining(model, train_dataset, test_dataset, epochs=10):
     
 @tf.autograph.experimental.do_not_convert
 def continuous_training(ensemble, test_generator, epochs=1, batch_size=1):
+    """Training loop used in CET"""
     tf.keras.backend.clear_session()
 
     # Hyperparameters
@@ -266,7 +274,7 @@ def cycle(ensemble, test_ds, train_generator, test_generator, epochs=1, batch_si
 
         
 def cycle_increasing_augmentation(ensemble, test_ds, target_rotation=360, epochs=1, batch_size=1, cycles=4, data_per_cycle=10000, name="%"):
-    """Alternately going through new data and then training on the collected datapoints.
+    """Alternately going through new increasingly rotated data and then training on the collected datapoints.
     Inbetween the collected data is saved to later be plotted."""
     
     # Initiate data collection
@@ -353,7 +361,8 @@ def cycle_increasing_augmentation(ensemble, test_ds, target_rotation=360, epochs
 
 def cycle_increasing_augmentation_accuracywise(ensemble, test_ds, epochs=1, batch_size=1, cycles=5, acc_threshold=0.9, data_step_size=1000, name="%"):
     """Alternately going through new data and then training on the collected datapoints.
-    Inbetween the collected data is saved to later be plotted."""
+    Inbetween the collected data is saved to later be plotted.
+    The cycles are triggered by an accuracy threshold"""
     
     # Initiate data collection
     train_losses = np.zeros((cycles, len(ensemble.models), epochs))
@@ -453,8 +462,7 @@ def cycle_increasing_augmentation_accuracywise(ensemble, test_ds, epochs=1, batc
 
 
 def cycle_increasing_augmentation_notraining(ensemble, test_ds, target_rotation=360, batch_size=1, cycles=4, name="%"):
-    """Alternately going through new data and then training on the collected datapoints.
-    Inbetween the collected data is saved to later be plotted."""
+    """Alternately going through increasingly rotated data."""
     
     # Initiate data collection
     #train_losses = np.zeros((cycles, len(ensemble.models), epochs))

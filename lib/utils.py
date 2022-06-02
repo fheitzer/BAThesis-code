@@ -86,6 +86,7 @@ def plot_collected_data(ensemble, save=True):
     ax.set_axisbelow(True)
     #plt.xlabel("Model")
     
+    # Add description of the plots
     plt.title(f"Amount of the Collected Data ({len(ensemble.continuous_training_data)}) per Model And Class.\n{len(ensemble.missed_data)} Data points Were Not Classified.")
     
     subtitle = f"{np.nansum(df_pos)} collected datapoints labeled correct\n{np.sum(df_all)-np.sum(df_pos)} collected datapoints were labeled wrong\n"
@@ -101,6 +102,7 @@ def plot_collected_data(ensemble, save=True):
     plt.show()
 
 def run_data(ensemble, data=None, generator=None, datapoints=10000, save=False):
+    """Run data by the ensemble to make it collect data for CET"""
     if not save:
         ensemble.reset_data()
     
@@ -116,10 +118,12 @@ def run_data(ensemble, data=None, generator=None, datapoints=10000, save=False):
 
 
 def get_file_names(directory):
+    """Get the file names in a directory in alphabetic order"""
     return sorted(glob.glob(directory + "/*"))
 
 
 def plot_cycles(ensemble, cycle_name):
+    """Plot the data collection of each cycle of a specific run with a plot showing the ensemble and model accuracy history for each epoch of training"""
     filepaths = get_file_names("../continuous_training_data/"+cycle_name)
     
     for i, idx in enumerate(range(0, len(filepaths)-1, 2)):
@@ -162,6 +166,7 @@ def plot_cycles(ensemble, cycle_name):
     
 
 def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=True, save=True, withaccs=False):
+    """Plot the data collection of each cycle of a specific run with a plot showing the ensemble and model accuracy history for each cycle of training"""
     filepaths = get_file_names("../continuous_training_data/" + cycle_name)
     if only_some:
         filepaths = [filepaths[i] for i in only_some]
@@ -176,6 +181,7 @@ def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=
 
         
 def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
+    """Plot the accuracy history of each model and ensemble after each epoch of training"""
     accloss = np.load('../continuous_training_data/' + cycle_name + '_accloss.npz')
     
     plot_n = 2
@@ -236,6 +242,7 @@ def plot_cycle_accuracies(cycle_name, increasing_rotation=False):
         
 
 def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
+    """Plot 3 runs in a grid showing the ensemble, model, and frozen data accuracy history"""
     n_rows = 2
     n_columns = len(cycle_names)
     starting_acc_norotation = 0.94017009
@@ -347,6 +354,7 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
 
 
 def fix_numeration_in_dir(name):
+    """A helper function to reformat some filenames"""
     name = '../continuous_training_data/' + name
     files = os.listdir(name)
     for file in files:
@@ -363,6 +371,7 @@ def fix_numeration_in_dir(name):
         
 
 def pivot_data(ensemble):
+    """A helper function restructuring the collected data for the specialization index"""
     # Turning the arrays to a dataframe which has the combination counts as values
     df_all = pd.DataFrame(np.fromiter(ensemble.continuous_training_data.map(lambda img, pred, model, label: model), np.float32), columns=['model'])
     df_all['label'] = np.fromiter(ensemble.continuous_training_data.map(lambda img, pred, model, label: tf.argmax(pred)), np.float32)
@@ -377,18 +386,23 @@ def pivot_data(ensemble):
 
 
 def get_specialization_index(ensemble):
+    """Get specialization index for one cycle"""
     loss_func = tf.keras.losses.CategoricalCrossentropy()
     df = pivot_data(ensemble)
     index = np.zeros(10)
+    # Go through data collection of the cycle
     for idx, label in enumerate(df):
+        # Normalize to 0-1
         n = np.sum(label)
         dist_normalized = label/n
+        # Get the loss
         index[idx] = loss_func(dist_normalized, 
                           np.random.dirichlet(np.ones(len(ensemble.models))))
     return index
 
         
 def classification_specialization(ensemble, cycle_name):
+    """Get specialization index for a whole run for each class"""
     filepaths = get_file_names("../continuous_training_data/"+cycle_name)
     cycles = int(len(filepaths)/2)
     index = np.zeros((cycles, 10))
@@ -408,6 +422,7 @@ def classification_specialization(ensemble, cycle_name):
     
     
 def get_specialization_index_mean(ensemble):
+    """Get the mean specialization over all classes from 1 cycle"""
     loss_func = tf.keras.losses.CategoricalCrossentropy()
     df = pivot_data(ensemble)
     for idx, label in enumerate(df):
@@ -420,6 +435,7 @@ def get_specialization_index_mean(ensemble):
 
 
 def classification_specialization_mean(ensemble, cycle_name, legend=["1"]):
+    """Get specialization index mean for a whole run"""
     if type(cycle_name) is not list:
         cycle_name = [cycle_name]
     
@@ -449,6 +465,7 @@ def classification_specialization_mean(ensemble, cycle_name, legend=["1"]):
     plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
 
 def classification_specialization_mean_withoutfirst(ensemble, cycle_name, legend=["1"]):
+    """A test to see the influence of the first run on the specialization index"""
     if type(cycle_name) is not list:
         cycle_name = [cycle_name]
     
@@ -478,6 +495,7 @@ def classification_specialization_mean_withoutfirst(ensemble, cycle_name, legend
     
     
 def plot_frozen_model(name):
+    """Plot the accuracy of a model under dataset shift that does not perform CET"""
     accloss = np.load('../continuous_training_data/' + name + '_accloss.npz')
 
     fig, ax = plt.subplots(1, 2, figsize=(10,5))
@@ -529,6 +547,7 @@ def plot_frozen_model(name):
     #plt.show()
 
 def plot_multiple_model_accuracies(cycle_names, which="Jump", xlim=None):
+    """Plot multiple ensemble accuracy histories after each model's CET in one figure """
     fig, ax = plt.subplots(figsize=(10,5))
     # Plot description
     ax.grid()
@@ -598,6 +617,7 @@ def plot_multiple_model_accuracies(cycle_names, which="Jump", xlim=None):
 
     
 def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
+    """Plot multiple ensemble accuracy histories in one figure """
     if which == "Jump":
         plot_jump_ensemble_accuracies(cycle_names=cycle_names, xlim=xlim)
         return
@@ -692,6 +712,7 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
     
     
 def plot_jump_ensemble_accuracies(cycle_names, xlim=None):
+    """The configuration for the jump plot"""
     fig, ax = plt.subplots(figsize=(10,5))
     # Plot description
     ax.grid()

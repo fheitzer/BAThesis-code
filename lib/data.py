@@ -5,6 +5,7 @@ tf.keras.backend.set_floatx('float64')
 
 
 def bi_onehot(y, bi_val):
+    """Helper function for the idea of a binary-classification dataset shift"""
     if y is bi_val:
         return tf.one_hot(0, 2)
     else:
@@ -12,16 +13,20 @@ def bi_onehot(y, bi_val):
         
         
 def load_generator(rotation=5):
+    """Load the test and train generator for a specific rotation range"""
     (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
-    
+    # Normalize
     train_images = train_images / 255
     test_images = test_images / 255
     
+    # One hot encode
     test_labels = tf.keras.utils.to_categorical(test_labels, num_classes=10)
     train_labels = tf.keras.utils.to_categorical(train_labels, num_classes=10)
     
+    # data generator 
     datagenerator = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=rotation)
-
+    
+    # Fit the generators to data and labels
     train_generator = datagenerator.flow(np.reshape(test_images, (10000, 28, 28, 1)),
                                          test_labels,
                                          batch_size=1,
@@ -36,6 +41,7 @@ def load_generator(rotation=5):
     
 
 def load_data(binary=False, bi_range=[0,1,2,3,4,5], bi_val=1, batch_size=128, rotation=30):
+    """Load the train, tes dataset and the train,test generator"""
     (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
     
     # Normalize the data
@@ -76,6 +82,7 @@ def load_data(binary=False, bi_range=[0,1,2,3,4,5], bi_val=1, batch_size=128, ro
         
         return train_dataset_pre, train_dataset_post, test_dataset 
         
+    # One hot encode the labels
     train_dataset = train_dataset.map(lambda x, y: (x, tf.one_hot(y, 10)))
     test_dataset = test_dataset.map(lambda x, y: (x, tf.one_hot(y, 10)))
     
@@ -89,6 +96,7 @@ def load_data(binary=False, bi_range=[0,1,2,3,4,5], bi_val=1, batch_size=128, ro
                                                                 #fill_mode="nearest",
                                                                 #zoom_range=0.2,
                                                                 #shear_range=0.2)
+    # Fit generators to data and labels
     train_generator = datagenerator.flow(np.reshape(test_images, (10000, 28, 28, 1)),
                                          test_labels,
                                          batch_size=1,
