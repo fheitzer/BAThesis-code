@@ -45,7 +45,7 @@ def plot_ensemble_predicition_examples(ensemble, test_dataset):
         print(f"Ensemble: {getmax(ensemble(x)[0])}")
 
         
-def plot_collected_data(ensemble, save=True):
+def plot_collected_data(ensemble, save=True, number=None):
     
     if ensemble.continuous_training_data is None:
         return
@@ -96,8 +96,11 @@ def plot_collected_data(ensemble, save=True):
     print(subtitle)
     plt.legend(title="Class", loc='center left', bbox_to_anchor=(1, 0.5), framealpha=1)
     if save:
-        name = "res_collection_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-        plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
+        if number is None:
+            name = "res_collection_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+        else:
+            name = "%02d" % number
+        plt.savefig('../graphs_appendix_cycles/' + name + '.pdf', bbox_inches='tight')
     
     plt.show()
 
@@ -165,7 +168,7 @@ def plot_cycles(ensemble, cycle_name):
              xticks=range(mta.shape[0]))
     
 
-def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=True, save=True, withaccs=False):
+def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=True, save=True, withaccs=False, numerate=False):
     """Plot the data collection of each cycle of a specific run with a plot showing the ensemble and model accuracy history for each cycle of training"""
     filepaths = get_file_names("../continuous_training_data/" + cycle_name)
     if only_some:
@@ -174,7 +177,11 @@ def plot_cycles_oneline(ensemble, cycle_name, only_some=[], increasing_rotation=
         print("Cycle: ", i)
         ensemble.load_data(filepaths[idx:idx+2])
         #clear_output(wait=True)
-        plot_collected_data(ensemble, save=save)
+        if numerate:
+            plot_collected_data(ensemble, save=save, number=i+1)
+        else:
+            plot_collected_data(ensemble, save=save)
+            
         
     if withaccs:
         plot_cycle_accuracies(cycle_name, increasing_rotation)
