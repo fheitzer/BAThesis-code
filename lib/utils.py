@@ -263,12 +263,17 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
         n_rows = 3
     fig, ax = plt.subplots(n_rows,
                            n_columns, 
-                           figsize=(6 * n_rows, 4 * n_columns), 
+                           figsize=(7 * n_rows, 5 * n_columns), 
                            sharey=True, 
                            sharex=True)
     # Plot description
+    ax[0,0].set_title("Ensemble Accuracy\n Under Dataset Shift", 
+                      fontsize=20)
     ax[0,1].set_title("Ensemble Accuracy\n Under Dataset Shift", 
                       fontsize=20)
+    ax[0,2].set_title("Ensemble Accuracy\n Under Dataset Shift", 
+                      fontsize=20)
+    
     ax[0,0].set_title(r"1 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
                       fontsize=18,
                       loc='right')
@@ -278,13 +283,40 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
     ax[0,2].set_title(r"5 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
                       fontsize=18,
                       loc='right')
+    ax[1,0].set_title(r"1 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
+                      fontsize=18,
+                      loc='right')
+    ax[1,1].set_title(r"2 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
+                      fontsize=18,
+                      loc='right')
+    ax[1,2].set_title(r"5 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
+                      fontsize=18,
+                      loc='right')
+    ax[2,0].set_title(r"1 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
+                      fontsize=18,
+                      loc='right')
+    ax[2,1].set_title(r"2 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
+                      fontsize=18,
+                      loc='right')
+    ax[2,2].set_title(r"5 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$", 
+                      fontsize=18,
+                      loc='right')
+    
+    ax[1,0].set_title("Model Accuracy\n Under Dataset Shift", 
+                      fontsize=20)
     ax[1,1].set_title("Model Accuracy\n Under Dataset Shift", 
                       fontsize=20)
-    ax[2,1].set_title("Ensemble Accuracy\n on Original Test Dataset", 
+    ax[1,2].set_title("Model Accuracy\n Under Dataset Shift", 
+                      fontsize=20)
+    ax[2,0].set_title("Ensemble Accuracy\n on Frozen Test Dataset", 
+                      fontsize=20)
+    ax[2,1].set_title("Ensemble Accuracy\n on Frozen Test Dataset", 
+                      fontsize=20)
+    ax[2,2].set_title("Ensemble Accuracy\n on Frozen Test Dataset", 
                       fontsize=20)
     plt.subplots_adjust(wspace=0.1, hspace=0.3)
-    fig.text(0.5, 0.04, 'Cycle', ha='center', fontsize=18)
-    fig.text(0.04, 0.5, 'Test Accuracy', va='center', rotation='vertical', fontsize=18)
+    fig.text(0.5, 0.05, 'Cycle', ha='center', fontsize=18)
+    fig.text(0.08, 0.5, 'Test Accuracy', va='center', rotation='vertical', fontsize=18)
     # Plot the data
     for idx, cycle_name in enumerate(cycle_names):
         # Get the data
@@ -307,7 +339,7 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
         ensemble_acc = pd.DataFrame(ensemble_acc)
         #ensemble_acc['x'] = np.arange(0,len(ensemble_acc)/5,0.2)
         ensemble_acc['x'] = np.arange(0,len(ensemble_acc))
-        ax[0,idx].plot(ensemble_acc['x'], ensemble_acc[0])
+        ax[0,idx].plot(ensemble_acc['x'], ensemble_acc[0], color='black')
         #ax[0,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
         
         # Split
@@ -333,7 +365,7 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
             old_task = old_task[:-border]
             old_task = pd.DataFrame(old_task)
             
-            ax[2,idx].plot(old_task)
+            ax[2,idx].plot(old_task, color='black')
             #ax[2,idx].vlines(x=range(0,60,idx+1), ymin=0.7, ymax=1, color='grey', alpha=0.3)
     
     x_max = int(ax[1,1].get_xlim()[1])
@@ -348,11 +380,21 @@ def plot_cycle_accuracies_grid(cycle_names, increasing_rotation=True, x_lim=50):
             # grid -> only horizontal
             row.grid(color="black", alpha=0.7)
             row.vlines(x=range(0,x_max,steps), ymin=0.7, ymax=1, color='grey', alpha=0.3)
-            
+    """
     ax[1,2].legend(["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"], 
                    loc='center left',
-                   bbox_to_anchor=(1.04,0.5),
+                   bbox_to_anchor=(0.6,-1.95),
                    fontsize=18)
+    ax[2,1].legend(["Ensemble"],
+                   loc='center left',
+                   bbox_to_anchor=(1.2,-0.43),
+                   fontsize=18)
+    """
+    ax[1,2].legend(["Deep NN", "Broad NN", "CNN", "Big CNN", "Small CNN"], 
+                   loc='center left',
+                   bbox_to_anchor=(1.02,0.5),
+                   fontsize=18)
+    
     plt.setp(ax, xlim=(0,x_lim))
     name = "res_grid_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
     plt.savefig('../graphs/' + name + '.pdf', bbox_inches='tight')
@@ -700,8 +742,8 @@ def plot_multiple_ensemble_accuracies(cycle_names, which="Jump", xlim=None):
         fig.suptitle("During One Rotation 2 CET-Ensembles Look at 15k Data Points per Rotation.\nOne Ensemble Takes 1 Cycle, The Other Takes 5 Cycles.")
         ax.legend([r"1 $\frac{\mathrm{Cycle}}{\mathrm{Rotation}}$\& 15k Data Points per cycle",
                    r"5 $\frac{\mathrm{Cycles}}{\mathrm{Rotation}}$\& 3k Data Points per cycle"], 
-                  loc='center left',
-                  bbox_to_anchor=(1.04,0.5),
+                  loc='lower center',
+                  bbox_to_anchor=(0.5, -0.5),
                   title="Run Configurations")
         ax.set_xlabel("Rotation in Degrees")
         ax.set_xticklabels(np.arange(0,7,1))
